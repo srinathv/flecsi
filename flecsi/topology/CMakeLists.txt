@@ -18,9 +18,9 @@
 #------------------------------------------------------------------------------#
 
 set(topology_HEADERS
-  graph_definition.h
-  graph_utils.h
+  closure_utils.h
   index_space.h
+  mesh_definition.h
   mesh_topology.h
   mesh_types.h
   mesh_utils.h
@@ -80,7 +80,6 @@ set(topology_SOURCES
 #    test/traversal.blessed
 #  LIBRARIES
 #    flecsi
-#    ${CINCH_RUNTIME_LIBRARIES}
 #)
 
 cinch_add_unit(dual
@@ -97,7 +96,6 @@ cinch_add_unit(dual
 #    test/bindings.blessed
 #  LIBRARIES
 #    flecsi
-#    ${CINCH_RUNTIME_LIBRARIES}
 #)
 
 #------------------------------------------------------------------------------#
@@ -112,7 +110,6 @@ cinch_add_unit(dual
 #    test/tree.blessed
 #  LIBRARIES
 #    flecsi
-#    ${CINCH_RUNTIME_LIBRARIES}
 #)
 
 #cinch_add_unit(tree1d
@@ -120,7 +117,6 @@ cinch_add_unit(dual
 #    test/tree1d.cc
 #  LIBRARIES
 #    flecsi
-#    ${CINCH_RUNTIME_LIBRARIES}
 #)
 
 #cinch_add_unit(tree3d
@@ -128,7 +124,6 @@ cinch_add_unit(dual
 #    test/tree3d.cc
 #  LIBRARIES
 #    flecsi
-#    ${CINCH_RUNTIME_LIBRARIES}
 #)
 
 #cinch_add_unit(gravity
@@ -136,7 +131,6 @@ cinch_add_unit(dual
 #    test/gravity.cc test/pseudo_random.h
 #  LIBRARIES
 #    flecsi
-#    ${CINCH_RUNTIME_LIBRARIES}
 #)
 
 # FIXME: Broken by refactor
@@ -158,14 +152,14 @@ cinch_add_unit(structured
 # Misc. unit tests.
 #------------------------------------------------------------------------------#
 
-cinch_add_unit(graph
+cinch_add_unit(closure
   SOURCES
-    test/graph.cc
+    test/closure.cc
 )
 
-cinch_add_unit(devel-graph
+cinch_add_unit(devel-closure
   SOURCES
-    test/devel-graph.cc
+    test/devel-closure.cc
   POLICY
     SERIAL_DEVEL
 )

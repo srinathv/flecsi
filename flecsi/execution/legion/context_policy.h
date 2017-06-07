@@ -15,10 +15,10 @@
 #ifndef flecsi_execution_legion_context_policy_h
 #define flecsi_execution_legion_context_policy_h
 
-///
-/// \file
-/// \date Initial file creation: Aug 4, 2016
-///
+//----------------------------------------------------------------------------//
+//! @file
+//! @date Initial file creation: Aug 4, 2016
+//----------------------------------------------------------------------------//
 
 #include <functional>
 #include <memory>
@@ -27,6 +27,7 @@
 
 #include <cinchlog.h>
 #include <legion.h>
+#include <legion_stl.h>
 
 #if !defined(ENABLE_MPI)
   #error ENABLE_MPI not defined! This file depends on MPI!
@@ -34,82 +35,134 @@
 
 #include <mpi.h>
 
-#include "flecsi/execution/common/task_hash.h"
 #include "flecsi/execution/legion/runtime_driver.h"
+#include "flecsi/execution/common/launch.h"
+#include "flecsi/execution/common/processor.h"
 #include "flecsi/utils/common.h"
 #include "flecsi/utils/const_string.h"
 #include "flecsi/utils/tuple_wrapper.h"
 
-clog_register_tag(context);
-clog_register_tag(interop);
+#include "flecsi/execution/legion/runtime_state.h"
 
 namespace flecsi {
 namespace execution {
 
-///
-/// \struct legion_runtime_runtime_state_t legion/context_policy.h
-/// \brief legion_runtime_state_t provides storage for Legion runtime
-///        information that can be reinitialized as needed to store const
-///        data types and references as required by the Legion runtime.
-///
-struct legion_runtime_state_t {
+//----------------------------------------------------------------------------//
+//! Context state uses thread-local storage (TLS). The state is set for
+//! each Legion task invocation using the task name hash of the plain-text
+//! task name as a key. This should give sufficient isolation from naming
+//! collisions. State should only be pushed or popped from the FleCSI
+//! task wrapper, or from top-level driver calls.
+//!
+//! FleCSI developers should be extremely careful with how this state
+//! is used. In particular, you should not rely on any particular
+//! initialization of this state, i.e., it may be uninitialized on any
+//! given thread. The current implementation does not make any assumptions
+//! about what tasks may have been invoked from a particular thread before
+//! pushing context information onto this state. It is safe for this state
+//! to be uninitialized when it is encountered by a task executing in
+//! the FleCSI runtime. This property \em must be maintained.
+//!
+//! @ingroup legion-execution
+//----------------------------------------------------------------------------//
 
-  legion_runtime_state_t(
-    Legion::Context & context_,
-    Legion::HighLevelRuntime * runtime_,
-    const Legion::Task * task_,
-    const std::vector<Legion::PhysicalRegion> & regions_
-  )
-  :
-    context(context_),
-    runtime(runtime_),
-    task(task_),
-    regions(regions_)
-  {}
-    
-  Legion::Context & context;
-  Legion::HighLevelRuntime * runtime;
-  const Legion::Task * task;
-  const std::vector<Legion::PhysicalRegion> & regions;
+#if !defined(ENABLE_LEGION_TLS)
+  extern thread_local std::unordered_map<size_t,
+    std::stack<std::shared_ptr<legion_runtime_state_t>>> state_;
+#endif
 
-}; // struct legion_runtime_state_t
+//----------------------------------------------------------------------------//
+//! The legion_context_policy_t is the backend runtime context policy for
+//! Legion.
+//!
+//! @ingroup legion-execution
+//----------------------------------------------------------------------------//
 
-// Use thread local storage for legion state information. The state_
-// is set for each legion task invocation using the task name hash
-// as a key. This seems like it should be safe, since multiple concurrent
-// invocations of the same task can only occur on seperate threads.
-extern thread_local std::unordered_map<size_t,
-  std::stack<std::shared_ptr<legion_runtime_state_t>>> state_;
-
-///
-/// \class legion_context_policy_t legion/context_policy.h
-/// \brief legion_context_policy_t provides...
-///
 struct legion_context_policy_t
 {
   const size_t TOP_LEVEL_TASK_ID = 0;
 
   //--------------------------------------------------------------------------//
-  // Initialization.
+  //! The task_id_t type is used to uniquely identify tasks that have
+  //! been registered with the runtime.
+  //!
+  //! @ingroup execution
   //--------------------------------------------------------------------------//
 
-  ///
-  /// FleCSI context initialization: registering all tasks and start Legion
-  /// runtime
-  ///
+  using task_id_t = Legion::TaskID;
+
+  //--------------------------------------------------------------------------//
+  //! The field_id_t type is used to uniquely identify data that have
+  //! been registered with the runtime.
+  //!
+  //! @ingroup execution
+  //--------------------------------------------------------------------------//
+
+  using field_id_t = Legion::FieldID;
+
+  //--------------------------------------------------------------------------//
+  //! The registration_function_t type defines a function type for
+  //! registration callbacks.
+  //--------------------------------------------------------------------------//
+
+  using registration_function_t =
+    std::function<void(task_id_t, processor_type_t, launch_t, std::string &)>;
+
+  //--------------------------------------------------------------------------//
+  //! The unique_tid_t type create a unique id generator for registering
+  //! tasks.
+  //--------------------------------------------------------------------------//
+
+  using unique_tid_t =
+    utils::unique_id_t<task_id_t, FLECSI_GENERATED_ID_MAX>;
+
+  //--------------------------------------------------------------------------//
+  //! The task_info_t type is a convenience type for defining the task
+  //! registration map below.
+  //--------------------------------------------------------------------------//
+
+  using task_info_t =
+    std::tuple<
+      task_id_t,
+      processor_type_t,
+      launch_t,
+      std::string,
+      registration_function_t
+    >;
+
+  //--------------------------------------------------------------------------//
+  // Runtime state.
+  //--------------------------------------------------------------------------//
+
+  //--------------------------------------------------------------------------//
+  //! FleCSI context initialization. This method initializes the FleCSI
+  //! runtime using Legion.
+  //!
+  //! @param argc The command-line argument count passed from main.
+  //! @param argv The command-line argument values passed from main.
+  //!
+  //! @return An integer value with a non-zero error code upon failure,
+  //!         zero otherwise.
+  //--------------------------------------------------------------------------//
+
   int
   initialize(
     int argc,
     char ** argv
   );
 
-  ///
-  /// push_state is used to control the state of the legion task with id==key.
-  /// Task is considered being completed when it's state is
-  /// removed from the state_ object;
-  /// Key - is a task-id.
-  ///
+  //--------------------------------------------------------------------------//
+  //! Push Legion runtime state onto a task specific stack. In this case,
+  //! \em task is the plain-text name of the user's task.
+  //!
+  //! @param key     The task hash key.
+  //! @param context The Legion task context reference.
+  //! @param runtime The Legion task runtime pointer.
+  //! @param task    The Legion task pointer.
+  //! @param regions The Legion physical regions.
+  //--------------------------------------------------------------------------//
 
+#if !defined(ENABLE_LEGION_TLS)
   void push_state(
     size_t key,
     Legion::Context & context,
@@ -125,13 +178,16 @@ struct legion_context_policy_t
 
     state_[key].push(std::shared_ptr<legion_runtime_state_t>
       (new legion_runtime_state_t(context, runtime, task, regions)));
-  } // set_state
+  } // push_state
+#endif
 
-  ///
-  /// pops_state(key) is used to control the state of the legion task with
-  ///  id=key. It removes the task state from the state_pbject when
-  /// the task is completed.
-  ///
+  //--------------------------------------------------------------------------//
+  //! Pop Legion runtime state off of the stack.
+  //!
+  //! @param key The task hash key.
+  //--------------------------------------------------------------------------//
+
+#if !defined(ENABLE_LEGION_TLS)
   void pop_state(
     size_t key
   )
@@ -142,23 +198,25 @@ struct legion_context_policy_t
     }
 
     state_[key].pop();
-  } // set_state
+  } // pop_state
+#endif
 
   //--------------------------------------------------------------------------//
-  // MPI interoperabiliy.
+  // MPI interoperability.
   //--------------------------------------------------------------------------//
 
-  ///
-  /// Set the MPI runtime state. When the state is changed to active,
-  /// the handshake interface will begin executing the current MPI task.
-  ///
-  /// \return A boolean indicating the current MPI runtime state.
-  ///
+  //--------------------------------------------------------------------------//
+  //! Set the MPI runtime state. When the state is changed to active,
+  //! the handshake interface will begin executing the current MPI task.
+  //!
+  //! @return A boolean indicating the current MPI runtime state.
+  //--------------------------------------------------------------------------//
+
   bool
   set_mpi_state(bool active)
   {
     {
-    clog_tag_guard(interop);
+    clog_tag_guard(context);
     clog(info) << "set_mpi_state " << active << std::endl;
     }
 
@@ -166,22 +224,27 @@ struct legion_context_policy_t
     return mpi_active_;
   } // toggle_mpi_state
 
-  ///
-  /// Set the MPI user task. When control is given to the MPI runtime
-  /// it will execute whichever function is currently set.
-  ///
+  //--------------------------------------------------------------------------//
+  //! Set the MPI user task. When control is given to the MPI runtime
+  //! it will execute whichever function is currently set.
+  //--------------------------------------------------------------------------//
+
   void
   set_mpi_task(
     std::function<void()> & mpi_task
   )
   {
     {
-    clog_tag_guard(interop);
+    clog_tag_guard(context);
     clog(info) << "set_mpi_task" << std::endl;
     }
 
     mpi_task_ = mpi_task;
   }
+
+  //--------------------------------------------------------------------------//
+  //! Invoke the current MPI task.
+  //--------------------------------------------------------------------------//
 
   void
   invoke_mpi_task()
@@ -189,75 +252,82 @@ struct legion_context_policy_t
     return mpi_task_();
   } // invoke_mpi_task
 
-  ///
-  /// Set distributed-memory domain.
-  ///
+  //--------------------------------------------------------------------------//
+  //! Set the distributed-memory domain.
+  //--------------------------------------------------------------------------//
+
   void
   set_all_processes(const LegionRuntime::Arrays::Rect<1> & all_processes)
   {
     all_processes_ = all_processes;
   } // all_processes
 
-  ///
-  /// Return distributed-memory domain.
-  ///
-  const LegionRuntime::Arrays::Rect<1> &
+  //--------------------------------------------------------------------------//
+  //! Return the distributed-memory domain.
+  //--------------------------------------------------------------------------//
+
+  const
+  LegionRuntime::Arrays::Rect<1> &
   all_processes()
   const
   {
     return all_processes_;
   } // all_processes
 
-  ///
-  /// Handoff to legion runtime from MPI.
-  ///
+  //--------------------------------------------------------------------------//
+  //! Handoff to legion runtime from MPI.
+  //--------------------------------------------------------------------------//
+
   void
   handoff_to_legion()
   {
     {
-    clog_tag_guard(interop);
+    clog_tag_guard(context);
     clog(info) << "handoff_to_legion" << std::endl;
     }
 
     handshake_.mpi_handoff_to_legion();
   } // handoff_to_legion
 
-  ///
-  /// Wait for Legion runtime to complete.
-  ///
+  //--------------------------------------------------------------------------//
+  //! Wait for Legion runtime to complete.
+  //--------------------------------------------------------------------------//
+
   void
   wait_on_legion()
   {
     {
-    clog_tag_guard(interop);
+    clog_tag_guard(context);
     clog(info) << "wait_on_legion" << std::endl;
     }
 
     handshake_.mpi_wait_on_legion();
   } // wait_on_legion
 
-  ///
-  /// Handoff to MPI from Legion.
-  ///
+  //--------------------------------------------------------------------------//
+  //! Handoff to MPI from Legion.
+  //--------------------------------------------------------------------------//
+
   void
   handoff_to_mpi()
   {
     {
-    clog_tag_guard(interop);
+    clog_tag_guard(context);
     clog(info) << "handoff_to_mpi" << std::endl;
     }
 
     handshake_.legion_handoff_to_mpi();
   } // handoff_to_mpi
 
-  ///
-  /// Wait for MPI runtime to complete.
-  ///
+  //--------------------------------------------------------------------------//
+  //! Wait for MPI runtime to complete task execution.
+  //--------------------------------------------------------------------------//
+
   void
   wait_on_mpi()
   {
     {
-    clog_tag_guard(interop);
+    clog_tag_guard(context);
     clog(info) << "wait_on_mpi" << std::endl;
     }
 
@@ -265,137 +335,209 @@ struct legion_context_policy_t
   } // wait_on_legion
 
   //--------------------------------------------------------------------------//
-  // FIXME: These all seem to be the same calling side below. Need to
-  //        understand what they are doing.
+  //! Unset the MPI active state to pass execution back to
+  //! the Legion runtime.
+  //!
+  //! @param ctx The Legion runtime context.
+  //! @param runtime The Legion task runtime pointer.
   //--------------------------------------------------------------------------//
 
-  ///
-  /// FIXME: Comment
-  ///
   void
   unset_call_mpi(
-    Legion::Context ctx,
+    Legion::Context & ctx,
     Legion::HighLevelRuntime * runtime
   );
 
-  ///
-  /// FIXME: Comment
-  ///
+  //--------------------------------------------------------------------------//
+  //! Switch execution to the MPI runtime.
+  //!
+  //! @param ctx The Legion runtime context.
+  //! @param runtime The Legion task runtime pointer.
+  //--------------------------------------------------------------------------//
+
   void
   handoff_to_mpi(
-    Legion::Context ctx,
+    Legion::Context & ctx,
     Legion::HighLevelRuntime * runtime
   );
 
-  ///
-  /// FIXME: Comment
-  ///
+  //--------------------------------------------------------------------------//
+  //! Wait on the MPI runtime to finish the current task execution.
+  //!
+  //! @param ctx The Legion runtime context.
+  //! @param runtime The Legion task runtime pointer.
+  //!
+  //! @return A future map with the result of the task execution.
+  //--------------------------------------------------------------------------//
+
   Legion::FutureMap
   wait_on_mpi(
-    Legion::Context ctx,
+    Legion::Context & ctx,
     Legion::HighLevelRuntime * runtime
   );
 
-  ///
-  /// FIXME: Comment
-  ///
+  //--------------------------------------------------------------------------//
+  //! Connect with the MPI runtime.
+  //!
+  //! @param ctx The Legion runtime context.
+  //! @param runtime The Legion task runtime pointer.
+  //--------------------------------------------------------------------------//
+
   void
   connect_with_mpi(
-    Legion::Context ctx,
+    Legion::Context & ctx,
     Legion::HighLevelRuntime * runtime
   );
 
   //--------------------------------------------------------------------------//
-  // Task registraiton.
+  // Task interface.
   //--------------------------------------------------------------------------//
 
-  using task_id_t = Legion::TaskID;
-  using register_function_t =
-    std::function<void(task_id_t, processor_type_t, launch_t, std::string &)>;
-  using unique_tid_t = utils::unique_id_t<task_id_t>;
+  //--------------------------------------------------------------------------//
+  //! Register a task with the runtime.
+  //!
+  //! @param key       The task hash key.
+  //! @param name      The task name string.
+  //! @param call_back The registration call back function.
+  //--------------------------------------------------------------------------//
 
   bool
   register_task(
-    task_hash_key_t & key,
-    processor_type_t variant,
+    size_t key,
+    processor_type_t processor,
+    launch_t launch,
     std::string & name,
-    const register_function_t & f
+    const registration_function_t & callback
   )
   {
-    // Get the task entry. It is ok to create a new entry, and to have
-    // multiple variants for each entry, i.e., we don't need to check
-    // that the entry is empty.
-    auto task_entry = task_registry_[key];
+    clog(info) << "Registering task callback " << name << " with key " <<
+      key << std::endl;
 
-    // Add the variant only if it has not been defined.
-    if(task_entry.find(variant) == task_entry.end()) {
-      task_registry_[key][variant] = 
-        std::make_tuple(unique_tid_t::instance().next(), f, name);
-      return true;
-    }
+    clog_assert(task_registry_.find(key) == task_registry_.end(),
+      "task key already exists");
 
-    return false;
+    task_registry_[key] = std::make_tuple(unique_tid_t::instance().next(),
+      processor, launch, name, callback);
+
+    return true;
   } // register_task
 
-  ///
-  /// return task_id for the task with task_key = key
-  ///
-  task_id_t
-  task_id(
-    task_hash_key_t key
-  )
+  //--------------------------------------------------------------------------//
+  //! Return the task registration tuple.
+  //!
+  //! @param key The task hash key.
+  //--------------------------------------------------------------------------//
+
+  template<
+    size_t KEY
+  >
+  task_info_t & 
+  task_info()
   {
-    {
-    clog_tag_guard(context);
-    clog(info) << "Returning task id: " << key << std::endl;
+    auto task_entry = task_registry_.find(KEY);
+
+    clog_assert(task_entry != task_registry_.end(),
+      "task key " << KEY << " does not exist");
+
+    return task_entry->second;
+  } // task_info
+
+  //--------------------------------------------------------------------------//
+  //! Return the task registration tuple.
+  //!
+  //! @param key The task hash key.
+  //--------------------------------------------------------------------------//
+
+  task_info_t & 
+  task_info(size_t key)
+  {
+    auto task_entry = task_registry_.find(key);
+
+    clog_assert(task_entry != task_registry_.end(),
+      "task key " << key << " does not exist");
+
+    return task_entry->second;
+  } // task_info
+
+  //--------------------------------------------------------------------------//
+  //! FIXME
+  //!
+  //! @param key The task hash key.
+  //--------------------------------------------------------------------------//
+
+  #define task_info_template_method(name, return_type, index)                  \
+    template<size_t KEY>                                                       \
+    return_type                                                                \
+    name()                                                                     \
+    {                                                                          \
+      {                                                                        \
+      clog_tag_guard(context);                                                 \
+      clog(info) << "Returning " << #name << " for " << KEY << std::endl;      \
+      }                                                                        \
+      return std::get<index>(task_info<KEY>());                                \
     }
 
-    // There is only one task variant set.
-    clog_assert(key.processor().count() == 1,
-      "multiple task variants given: " << key.processor());
-
-    // The key exists.
-    auto task_entry = task_registry_.find(key);
-    clog_assert(task_entry != task_registry_.end(),
-      "task key does not exist: " << key);
-
-    auto mask = static_cast<processor_mask_t>(key.processor().to_ulong());
-    auto variant = task_entry->second.find(mask_to_type(mask));
-
-    clog_assert(variant != task_entry->second.end(),
-      "task variant does not exist: " << key);
-    
-    return std::get<0>(variant->second);
-  } // task_id
-
   //--------------------------------------------------------------------------//
-  // Function registraiton.
+  //! FIXME
+  //!
+  //! @param key The task hash key.
   //--------------------------------------------------------------------------//
 
-  ///
-  /// register FLeCSI function
-  ///
-  template<typename T>
+  #define task_info_method(name, return_type, index)                           \
+    return_type                                                                \
+    name(size_t key)                                                           \
+    {                                                                          \
+      {                                                                        \
+      clog_tag_guard(context);                                                 \
+      clog(info) << "Returning " << #name << " for " << key << std::endl;      \
+      }                                                                        \
+      return std::get<index>(task_info(key));                                  \
+    }
+
+  //--------------------------------------------------------------------------//
+  //! FIXME
+  //!
+  //! @param key The task hash key.
+  //--------------------------------------------------------------------------//
+
+  task_info_template_method(task_id, task_id_t, 0);
+  task_info_method(task_id, task_id_t, 0);
+  task_info_template_method(processor_type, processor_type_t, 1);
+  task_info_method(processor_type, processor_type_t, 1);
+
+  //--------------------------------------------------------------------------//
+  // Function interface.
+  //--------------------------------------------------------------------------//
+
+  //--------------------------------------------------------------------------//
+  //! FIXME: This interface needs to be updated.
+  //--------------------------------------------------------------------------//
+
+  template<
+    typename RETURN,
+    typename ARG_TUPLE,
+    RETURN (*FUNCTION)(ARG_TUPLE),
+    size_t KEY
+  >
   bool
   register_function(
-    const utils::const_string_t & key,
-    T & function
   )
   {
-    size_t h = key.hash();
-    if(function_registry_.find(h) == function_registry_.end()) {
-      function_registry_[h] =
-        reinterpret_cast<std::function<void(void)> *>(&function);
-      return true;
-    } // if
+    clog_assert(function_registry_.find(KEY) == function_registry_.end(),
+      "function has already been registered");
 
-    return false;
+    clog(info) << "Registering function: " << FUNCTION << std::endl;
+
+    function_registry_[KEY] =
+      reinterpret_cast<void *>(FUNCTION);
+    return true;
   } // register_function
-  
-  ///
-  /// return function by it's key
-  ///
-  std::function<void(void)> *
+
+  //--------------------------------------------------------------------------//
+  //! FIXME: Add description.
+  //--------------------------------------------------------------------------//
+
+  void *
   function(
     size_t key
   )
@@ -404,154 +546,256 @@ struct legion_context_policy_t
   } // function
 
   //--------------------------------------------------------------------------//
-  // Legion runtime accessors.
+  // Legion runtime interface.
   //--------------------------------------------------------------------------//
 
-  ///
-  /// return context corresponding to the taks_key
-  ///
+  //--------------------------------------------------------------------------//
+  //! Return the Legion task runtime context for the given task key.
+  //!
+  //! @param key The task hash key.
+  //--------------------------------------------------------------------------//
+
+#if !defined(ENABLE_LEGION_TLS)
   Legion::Context &
   context(
-    size_t task_key
+    size_t key
   )
   {
-    return state_[task_key].top()->context;
+    return state_[key].top()->context;
   } // context
+#endif
 
-  ///
-  /// return runtime corresponding to the taks_key
-  ///
+  //--------------------------------------------------------------------------//
+  //! Return the Legion task runtime pointer for the given task key.
+  //!
+  //! @param key The task hash key.
+  //--------------------------------------------------------------------------//
+
+#if !defined(ENABLE_LEGION_TLS)
   Legion::HighLevelRuntime *
   runtime(
-    size_t task_key
+    size_t key
   )
   {
-    return state_[task_key].top()->runtime;
+    return state_[key].top()->runtime;
   } // runtime
+#endif
 
-  ///
-  /// return taks pointer by the  taks_key
-  ///
-  const
-  Legion::Task *
-  task(
-    size_t task_key
-  )
-  {
-    return state_[task_key].top()->task;
-  } // task
+  //--------------------------------------------------------------------------//
+  //! Collects Legion data associated with a FleCSI index space.
+  //--------------------------------------------------------------------------//
 
-  ///
-  /// return PhysicalRegions for the task with the key=task_key
-  ///
-  const
-  std::vector<Legion::PhysicalRegion> &
-  regions(
-    size_t task_key
-  )
-  {
-    return state_[task_key].top()->regions;
-  } // regions
-
-  // FIXME: Not sure if this is needed...
-  //------------------------------------------------------------------------//
-  // Data registration
-  //------------------------------------------------------------------------//
-
-  using partition_count_map_t = std::map<size_t, size_t>;
-
-  using  copy_task_map_t = std::unordered_map<size_t, task_hash_key_t>;
-
-  // FIXME: I would like to remove/move this.
-  struct partitioned_index_space
-  {
-    // logical region for the entity
-    Legion::LogicalRegion entities_lr;
-    // index partitions:
-    Legion::IndexPartition primary_ip;
-    Legion::IndexPartition exclusive_ip;
-    Legion::IndexPartition shared_ip;
-    Legion::IndexPartition ghost_ip;
-    // sizes
-    size_t size;
-    size_t exclusive_size;
-    size_t shared_size;
-    size_t ghost_size;
-    //number of elements per each part of the partition
-    partition_count_map_t exclusive_count_map;
-    partition_count_map_t shared_count_map;
-    partition_count_map_t ghost_count_map;
-    // vector of the PhaseBarrires
-    std::vector<Legion::PhaseBarrier> pbs;
-    //map for the copy_task ids
-    copy_task_map_t copy_task_map;
+  struct index_space_data_t{
+    Legion::PhaseBarrier* pbarrier_as_owner_ptr;
+    std::vector<Legion::PhaseBarrier*> ghost_owners_pbarriers_ptrs;
+    std::vector<Legion::LogicalRegion> ghost_owners_lregions;
+    Legion::STL::map<LegionRuntime::Arrays::coord_t,
+      LegionRuntime::Arrays::coord_t> global_to_local_color_map;
+    Legion::LogicalRegion color_region;
+    Legion::IndexPartition primary_ghost_ip;
+    Legion::LogicalRegion primary_lr;
+    Legion::LogicalRegion exclusive_lr;
+    Legion::LogicalRegion shared_lr;
+    Legion::LogicalRegion ghost_lr;
+    Legion::IndexPartition excl_shared_ip;
   };
- 
+
+  //--------------------------------------------------------------------------//
+  //! Get index space data.
+  //!
+  //! @param index_space FleCSI index space, e.g. cells key
+  //--------------------------------------------------------------------------//
+
+  auto&
+  index_space_data_map()
+  {
+    return index_space_data_map_;
+  }
+
+  //--------------------------------------------------------------------------//
+  // Gathers info about registered data fields.
+  //--------------------------------------------------------------------------//
+
+  struct field_info_t{
+    size_t data_client_hash;
+    size_t storage_type;
+    size_t size;
+    size_t namespace_hash;
+    size_t name_hash;
+    size_t versions;
+    field_id_t fid;
+    size_t index_space;
+  }; // struct field_info_t
+
+  //--------------------------------------------------------------------------//
+  //! Register field info for index space and field id.
+  //!
+  //! @param index_space virtual index space
+  //! @param field allocated field id
+  //! @param field_info field info as registered
+  //--------------------------------------------------------------------------//
+
+  void register_field_info(field_info_t& field_info){
+    field_info_vec_.emplace_back(std::move(field_info));
+  }
+
+  //--------------------------------------------------------------------------//
+  //! Return registered fields
+  //--------------------------------------------------------------------------//
+
+  const std::vector<field_info_t>&
+  registered_fields()
+  const
+  {
+    return field_info_vec_;
+  }
+
+  //--------------------------------------------------------------------------//
+  //! Add an index space.
+  //!
+  //! @param index_space index space to add.
+  //--------------------------------------------------------------------------//
+  
+  void
+  add_index_space(size_t index_space)
+  {
+    index_spaces_.insert(index_space);    
+  }
+
+  //--------------------------------------------------------------------------//
+  //! Return set of all index spaces.
+  //--------------------------------------------------------------------------//
+
+  auto&
+  index_spaces()
+  const
+  {
+    return index_spaces_;
+  }
+
+  //--------------------------------------------------------------------------//
+  //! Put field info for index space and field id.
+  //!
+  //! @param field_info field info as registered
+  //--------------------------------------------------------------------------//
+  
+  void
+  put_field_info(
+    const field_info_t& field_info
+  )
+  {
+    size_t index_space = field_info.index_space;
+    field_id_t fid = field_info.fid;
+
+    field_info_map_[index_space].emplace(fid, field_info);
+    
+    field_map_.insert({{field_info.data_client_hash,
+      field_info.namespace_hash ^ field_info.name_hash}, {index_space, fid}});
+  } // put_field_info
+
+  //--------------------------------------------------------------------------//
+  //! Get registered field info map for read access.
+  //--------------------------------------------------------------------------//
+
+  const std::map<size_t, std::map<field_id_t, field_info_t>>&
+  field_info_map()
+  const
+  {
+    return field_info_map_;
+  } // field_info_map
+
+
+  //--------------------------------------------------------------------------//
+  //! Lookup registered field info from data client and namespace hash.
+  //! @param data_client_hash data client type hash
+  //! @param namespace_hash namespace/field name hash
+  //!--------------------------------------------------------------------------//
+
+  const field_info_t&
+  get_field_info(
+    size_t data_client_hash,
+    size_t namespace_hash)
+  const
+  {
+    auto itr = field_map_.find({data_client_hash, namespace_hash});
+    clog_assert(itr != field_map_.end(), "invalid field");
+    
+    auto iitr = field_info_map_.find(itr->second.first);
+    clog_assert(iitr != field_info_map_.end(), "invalid index_space");
+    
+    auto fitr = iitr->second.find(itr->second.second);
+    clog_assert(fitr != iitr->second.end(), "invalid fid");
+    
+    return fitr->second;
+  }
+
 private:
 
   //--------------------------------------------------------------------------//
-  // Task registry
+  // Task data members.
   //--------------------------------------------------------------------------//
 
-  struct task_value_hash_t{
-    std::size_t
-    operator () (
-      const processor_type_t & key
-    )
-    const
-    {
-      return size_t(key);
-    } // operator ()
-  };
-
-  struct task_value_equal_t{
-    bool
-    operator () (
-      const processor_type_t & key1,
-      const processor_type_t & key2
-    )
-    const
-    {
-      return size_t(key1) == size_t(key2);
-    } // operator ()
-  };
-
-  // Define the value type for task map.
-  using task_value_t =
-    std::unordered_map<
-      processor_type_t,
-      std::tuple<task_id_t, register_function_t, std::string>,
-      task_value_hash_t,
-      task_value_equal_t
-    >;
-
-  // Define the map type using the task_hash_t hash function.
-  std::unordered_map<
-    task_hash_t::key_t, // key
-    task_value_t,       // value
-    task_hash_t,        // hash function
-    task_hash_t         // equivalence operator
+  // Map to store task registration callback methods.
+  std::map<
+    size_t,
+    task_info_t
   > task_registry_;
 
   //--------------------------------------------------------------------------//
-  // Function registry
+  // Function data members.
   //--------------------------------------------------------------------------//
 
-  std::unordered_map<size_t, std::function<void(void)> *>
+  std::unordered_map<size_t, void *>
     function_registry_;
 
   //--------------------------------------------------------------------------//
-  // MPI Interoperability
+  // Legion data members.
   //--------------------------------------------------------------------------//
 
   Legion::MPILegionHandshake handshake_;
   LegionRuntime::Arrays::Rect<1> all_processes_;
+
+  //--------------------------------------------------------------------------//
+  // MPI data members.
+  //--------------------------------------------------------------------------//
+
   std::function<void()> mpi_task_;
   bool mpi_active_ = false;
 
+  //--------------------------------------------------------------------------//
+  // Field info vector for registered fields in TLT
+  //--------------------------------------------------------------------------//
+
+  std::vector<field_info_t> field_info_vec_;
+
+  //--------------------------------------------------------------------------//
+  // Field info map for fields in SPMD task, key1 = index space, key2 = fid
+  //--------------------------------------------------------------------------//
+
+  std::map<size_t, std::map<field_id_t, field_info_t>> field_info_map_;
+
+  //--------------------------------------------------------------------------//
+  // Set of index spaces.
+  //--------------------------------------------------------------------------//
+
+  std::set<size_t> index_spaces_;
+
+  //--------------------------------------------------------------------------//
+  // Field map, key1 = (data client hash, name/namespace hash)
+  // value = (index space, fid)
+  //--------------------------------------------------------------------------//
+
+  std::map<std::pair<size_t, size_t>, std::pair<size_t, field_id_t>>
+    field_map_;
+
+  //--------------------------------------------------------------------------//
+  // Legion data members within SPMD task.
+  //--------------------------------------------------------------------------//
+  std::map<size_t, index_space_data_t> index_space_data_map_;
+
 }; // class legion_context_policy_t
 
-} // namespace execution 
+} // namespace execution
 } // namespace flecsi
 
 #endif // flecsi_execution_legion_context_policy_h

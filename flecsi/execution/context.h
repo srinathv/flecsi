@@ -15,35 +15,45 @@
 #ifndef flecsi_execution_context_h
 #define flecsi_execution_context_h
 
+//----------------------------------------------------------------------------//
+//! @file
+//! @date Initial file creation: Oct 19, 2015
+//----------------------------------------------------------------------------//
+
 #include <cstddef>
 #include <unordered_map>
 
 #include "cinchlog.h"
 #include "flecsi/utils/const_string.h"
-#include "flecsi/partition/index_partition.h"
+#include "flecsi/coloring/index_coloring.h"
+#include "flecsi/coloring/coloring_types.h"
 
-///
-/// \file context.h
-/// \authors bergen
-/// \date Initial file creation: Oct 19, 2015
-///
+clog_register_tag(context);
 
 namespace flecsi {
 namespace execution {
 
-///
-/// \class context__ context.h
-/// \brief context__ is a dummy class that must have a specialization
-///        for a specific execution policy.
-///
-template<class context_policy_t>
-struct context__ : public context_policy_t
-{
-  using index_partition_t = flecsi::dmp::index_partition_t;
+//----------------------------------------------------------------------------//
+//! The context__ type provides a high-level runtime context interface that
+//! is implemented by the given context policy.
+//!
+//! @tparam CONTEXT_POLICY The backend context policy.
+//!
+//! @ingroup execution
+//----------------------------------------------------------------------------//
 
-  ///
-  /// Myer's singleton instance.
-  ///
+template<class CONTEXT_POLICY>
+struct context__ : public CONTEXT_POLICY
+{
+  using index_coloring_t = flecsi::coloring::index_coloring_t;
+  using coloring_info_t = flecsi::coloring::coloring_info_t;
+
+  //---------------------------------------------------------------------------/
+  //! Myer's singleton instance.
+  //!
+  //! @return The single instance of this type.
+  //---------------------------------------------------------------------------/
+
   static
   context__ &
   instance()
@@ -52,87 +62,143 @@ struct context__ : public context_policy_t
     return context;
   } // instance
 
-  /// Copy constructor (disabled)
-  context__(const context__ &) = delete;
+  //---------------------------------------------------------------------------/
+  //! Add an index coloring.
+  //!
+  //! @param key The map key.
+  //! @param coloring The index coloring to add.
+  //! @param coloring The index coloring information to add.
+  //---------------------------------------------------------------------------/
 
-  /// Assignment operator (disabled)
-  context__ & operator = (const context__ &) = delete;
-
-  /// Move constructor and assignment operator
-  context__(context__ &&) = default;
-  context__ & operator = (context__ &&) = default;
-
-  ///
-  /// Add an index partition.
-  ///
-  /// \param key The map key.
-  /// \param partition The partition to add.
-  ///
   void
-  add_partition(
+  add_coloring(
     size_t key,
-    index_partition_t & partition
+    index_coloring_t & coloring,
+    std::unordered_map<size_t, coloring_info_t> & coloring_info
   )
   {
-    if(partitions_.find(key) == partitions_.end()) {
-      partitions_[key] = partition;
-    } // if
-  } // add_partition
+    clog_assert(colorings_.find(key) == colorings_.end(),
+      "color index already exists");
 
-  ///
-  /// Return the partition referenced by key.
-  ///
-  /// \param key The key associated with the partition to be returned.
-  ///
-  const index_partition_t &
-  partition(
+    colorings_[key] = coloring;
+    coloring_info_[key] = coloring_info;
+  } // add_coloring
+
+  //---------------------------------------------------------------------------/
+  //! Return the index coloring referenced by key.
+  //!
+  //! @param key The key associated with the coloring to be returned.
+  //---------------------------------------------------------------------------/
+
+  const index_coloring_t &
+  coloring(
     size_t key
   )
   {
-    if(partitions_.find(key) == partitions_.end()) {
+    if(colorings_.find(key) == colorings_.end()) {
       clog(fatal) << "invalid key " << key << std::endl;
     } // if
 
-    return partitions_[key];
-  } // partition
+    return colorings_[key];
+  } // coloring
 
-  ///
-  /// Return the partition map (convenient for iterating through all
-  /// of the partitions.
-  ///
-  const std::unordered_map<size_t, index_partition_t> &
-  partitions()
+  //---------------------------------------------------------------------------/
+  //! Return the index coloring information referenced by key.
+  //!
+  //! @param key The key associated with the coloring information
+  //!            to be returned.
+  //---------------------------------------------------------------------------/
+
+  const std::unordered_map<size_t, coloring_info_t> &
+  coloring_info(
+    size_t key
+  )
+  {
+    if(coloring_info_.find(key) == coloring_info_.end()) {
+      clog(fatal) << "invalid key " << key << std::endl;
+    } // if
+
+    return coloring_info_[key];
+  } // coloring_info
+
+  //---------------------------------------------------------------------------/
+  //! Return the coloring map (convenient for iterating through all
+  //! of the colorings.
+  //!
+  //! @return The map of index colorings.
+  //---------------------------------------------------------------------------/
+
+  const std::unordered_map<size_t, index_coloring_t> &
+  coloring_map()
   const
   {
-    return partitions_;
-  } // partitions
+    return colorings_;
+  } // colorings
+
+  //---------------------------------------------------------------------------/
+  //! Return the coloring info map (convenient for iterating through all
+  //! of the colorings.
+  //!
+  //! @return The map of index coloring information.
+  //---------------------------------------------------------------------------/
+
+  const std::unordered_map<
+    size_t,
+    std::unordered_map<size_t, coloring_info_t>
+  > &
+  coloring_info_map()
+  const
+  {
+    return coloring_info_;
+  } // colorings
 
 private:
 
-  /// Default constructor
-  context__() : context_policy_t() {}
+  // Default constructor
+  context__() : CONTEXT_POLICY() {}
 
-  /// Destructor
+  // Destructor
   ~context__() {}
 
-  std::unordered_map<size_t, index_partition_t> partitions_;
+  // We don't need any of these
+  context__(const context__ &) = delete;
+  context__ & operator = (const context__ &) = delete;
+  context__(context__ &&) = delete;
+  context__ & operator = (context__ &&) = delete;
+
+  // key: virtual index space id
+  // value: coloring indices (exclusive, shared, ghost)
+  std::unordered_map<size_t, index_coloring_t> colorings_;
+
+  // key: virtual index space.
+  // value: map of color to coloring info
+  std::unordered_map<size_t,
+    std::unordered_map<size_t, coloring_info_t>> coloring_info_;
 
 }; // class context__
 
 } // namespace execution
 } // namespace flecsi
 
-//
-// This include file defines the flecsi_execution_policy_t used below.
-//
+//----------------------------------------------------------------------------//
+// This include file defines the FLECSI_RUNTIME_CONTEXT_POLICY used below.
+//----------------------------------------------------------------------------//
+
 #include "flecsi_runtime_context_policy.h"
 
 namespace flecsi {
 namespace execution {
 
-using context_t = context__<flecsi_context_policy_t>;
+//----------------------------------------------------------------------------//
+//! The context_t type is the high-level interface to the FleCSI runtime
+//! context.
+//!
+//! @ingroup execution
+//----------------------------------------------------------------------------//
 
-} //namespace execution 
+using context_t = context__<FLECSI_RUNTIME_CONTEXT_POLICY>;
+
+} // namespace execution
 } // namespace flecsi
 
 #endif // flecsi_execution_context_h
