@@ -20,6 +20,9 @@ set(topology_HEADERS
   mesh_types.h
   mesh_utils.h
   tree_topology.h
+  structured_index_space.h
+  structured_mesh_types.h
+  structured_mesh_topology.h
   PARENT_SCOPE
 )
 
@@ -109,6 +112,9 @@ cinch_add_unit(gravity-state
 cinch_add_unit(structured
   SOURCES
     test/structured.cc
+  LIBRARIES
+    flecsi
+    ${CINCH_RUNTIME_LIBRARIES}
 )
 
 #------------------------------------------------------------------------------#
@@ -130,6 +136,11 @@ cinch_add_unit(devel-graph
 cinch_add_unit(index-space
   SOURCES
     test/index-space.cc test/pseudo_random.h
+)
+
+cinch_add_unit(structured_index
+  SOURCES
+    test/structured_index_space.cc
 )
 
 #~---------------------------------------------------------------------------~-#
