@@ -163,6 +163,24 @@ public:
     return ms_.index_spaces[M][D].size();
   } // num_entities
 
+  template<
+    size_t D,
+    size_t M = 0
+  >
+  auto get_indices(id_t entity) 
+  {
+    return ms_.index_spaces[M][D].template get_indices_from_offset(entity);
+  }
+  
+ template<
+    size_t D,
+    size_t M = 0
+  >
+  auto get_offset(id_vector_t &idv) 
+  {
+    return ms_.index_spaces[M][D].template get_offset_from_indices(idv);
+  }
+
   //Query type 1: Provides traversal over whole index space
   /*!
     Get the top-level entities of topological dimension D of the specified
@@ -220,125 +238,6 @@ public:
 
   } //entities
 
- 
-
-
-/*template<size_t FD, size_t TD, size_t N>
-auto entities_up(size_t ent)
-{
-  assert(FD == 0);
-  id_vector_t adj;
- 
-  auto indices = ms_.index_spaces[N][FD].template get_indices_from_offset(ent);
-  auto offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
- 
-  switch(meshdim_){
-    case 1: //V-->E
-      assert(TD == 1); 
-      adj.push_back(offset);
-      adj.push_back(entities<TD,N,-1>(offset));
-      break;
-    case 2: //V-->F, V-->E, E-->F
-      assert(TD == 2); 
-      adj.push_back(offset);
-      adj.push_back(entities<TD,N,-1,0>(offset));
-      adj.push_back(entities<TD,N,-1,-1>(offset));
-      adj.push_back(entities<TD,N,0,-1>(offset));
-      break;
-    case 3: //V-->C, E-->C, F-->C
-      assert(TD == 3); 
-      adj.push_back(offset);
-      adj.push_back(entities<TD,N,-1,0,0>(offset));
-      adj.push_back(entities<TD,N,-1,-1,-1>(offset));
-      adj.push_back(entities<TD,N,0,-1,-1>(offset));
-      adj.push_back(entities<TD,N,0,0,-1>(offset));
-      adj.push_back(entities<TD,N,-1,0,-1>(offset));
-      adj.push_back(entities<TD,N,-1,-1,0>(offset));
-      adj.push_back(entities<TD,N,0,-1,0>(offset));
-      break;
-    default:
-      std::cerr<<"Requesting downward-adjacencies for dimension greater than 3";
-  }
-  return adj;
-} //entities_up
-*/
-
-/* Query type 4: Same dimensional adjacencies
- * */
-/*template<size_t FD, size_t N>
-auto entities_same(size_t ent)
-{
- id_vector_t adj;
- switch(meshdim_){
-  case 1: //E-->E 
-    adj.push_back(entities<FD,N,1>(ent));
-    adj.push_back(entities<FD,N,-1>(ent));
-    break;
-  case 2:
-    assert(FD == 2); //F-->F 
-    adj.push_back(entities<FD,N,1,0>(ent));
-    adj.push_back(entities<FD,N,0,1>(ent));
-    adj.push_back(entities<FD,N,-1,0>(ent));
-    adj.push_back(entities<FD,N,0,-1>(ent));
-    break;
-  case 3: 
-    assert(FD == 3); //C-->C
-    adj.push_back(entities<FD,N,1,0,0>(ent));
-    adj.push_back(entities<FD,N,0,1,0>(ent));
-    adj.push_back(entities<FD,N,-1,0,0>(ent));
-    adj.push_back(entities<FD,N,0,-1,0>(ent));
-    adj.push_back(entities<FD,N,0,0,1>(ent));
-    adj.push_back(entities<FD,N,0,0,-1>(ent));
-    break;
-  default:
-    std::cerr<<"Requesting same-dimensional adjacencies for dimension greater than 3";
- }
- return adj;
-} //entities_same
-*/
-
-/* Query type 5: Downward adjacencies
- *
- * */
-/*template<size_t FD, size_t TD, size_t N>
-auto entities_down(size_t ent)
-{
-  assert(TD == 0);
-  id_vector_t adj;
-  
-  auto indices = ms_.index_spaces[N][FD].template get_indices_from_offset(ent);
-  auto offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
- 
-  switch(meshdim_){
-    case 1:
-      assert(FD == 1); //E-->V
-      adj.push_back(offset);
-      adj.push_back(entities<TD,N,1>(offset));
-      break;
-    case 2:
-      assert(FD == 2); //F-->V, F-->E  
-      adj.push_back(offset);
-      adj.push_back(entities<TD,N,1,0>(offset));
-      adj.push_back(entities<TD,N,1,1>(offset));
-      adj.push_back(entities<TD,N,0,1>(offset));
-      break;
-    case 3:
-      assert(FD == 3); //C-->V, C-->E, C-->F
-      adj.push_back(offset);
-      adj.push_back(entities<TD,N,1,0,0>(offset));
-      adj.push_back(entities<TD,N,1,1,0>(offset));
-      adj.push_back(entities<TD,N,0,1,0>(offset));
-      adj.push_back(entities<TD,N,0,0,1>(offset));
-      adj.push_back(entities<TD,N,1,0,1>(offset));
-      adj.push_back(entities<TD,N,1,1,1>(offset));
-      adj.push_back(entities<TD,N,0,1,1>(offset));
-      break;
-    default:
-      std::cerr<<"Requesting downward-adjacencies for dimension greater than 3";
-  }
-  return adj;
-} //entities_down
-*/
 
 /* Query type 3: FD-type stencil queries between entities
  *               of the same dimension. 
@@ -365,9 +264,13 @@ auto entities(size_t ent)
     size_t ind = get_index_in_storage(ent,D,N);
     size_t value = ent;
     size_t nx;
+
+    if (ind == 2)
+      ent = ent - ms_.index_spaces[N][1].template size();
+
     auto indices = ms_.index_spaces[N][ind].template get_indices_from_offset(ent);
     
-    std::cout<<"indices = ["<<indices[0]<<", "<<indices[1]<<" ]"<<std::endl;
+    //std::cout<<"indices = ["<<indices[0]<<", "<<indices[1]<<" ]"<<std::endl;
     
     if((ms_.index_spaces[N][ind].template check_index_limits<0>(xoff+indices[0]))
        && (ms_.index_spaces[N][ind].template check_index_limits<1>(yoff+indices[1])))
@@ -419,480 +322,626 @@ private:
   } // num_entities_
 
 
+  // Up adjacencies
   template<size_t FD, size_t TD, size_t N>
   auto entities_up_(size_t ent)
   {
-    id_vector_t adj, indices;
-    size_t index = get_index_in_storage(ent, FD, N);
-    indices = ms_.index_spaces[N][index].template get_indices_from_offset(ent);
+    id_vector_t adj;
     
     if (meshdim_ == 1)
     {
-     assert(FD == 0);
-     auto offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
-
-     adj.push_back(offset);
-     adj.push_back(entities<TD,N,-1>(offset));
+      adj = entities_up_1D_<FD,TD,N>(ent);
     }
     else if (meshdim_ == 2)
     {
-      size_t offset, xoffset, yoffset, nx;  
-
-      if ((FD == 0) && (TD == 1)) //V-->E
-      {
-        xoffset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
-        yoffset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(indices);
-        nx = ms_.index_spaces[N][TD].template size();
-
-        //Ex
-        adj.push_back(xoffset);
-        adj.push_back(entities<TD,N,0,-1>(xoffset));
-      
-        //Ey
-        adj.push_back(yoffset+nx);
-        adj.push_back(entities<TD,N,-1,0>(yoffset+nx));
-      }
-      else if ((FD == 0) && (TD == 2)) //V-->F
-      {
-        offset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
-        adj.push_back(offset);
-        adj.push_back(entities<TD,N,-1,0>(offset));
-        adj.push_back(entities<TD,N,-1,-1>(offset));
-        adj.push_back(entities<TD,N,0,-1>(offset));
-      }
-      else if ((FD == 1) && (TD == 2)) //E-->F
-      {
-        if (ent >= ms_.index_spaces[N][FD].template size()) //Ex -->F
-        {
-          offset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
-          adj.push_back(offset);
-          adj.push_back(entities<TD,N,-1,0>(offset));
-        }
-        else //Ey -->F
-        {
-          offset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
-          adj.push_back(offset);
-          adj.push_back(entities<TD,N,0,-1>(offset));
-        } 
-      }
+     adj = entities_up_2D_<FD,TD,N>(ent);
     }
     else if (meshdim_ == 3)
     {
-      size_t offset, xoffset, yoffset, zoffset;
-      size_t nx, ny;  
-
-      if ((FD == 0) && (TD == 1)) //V-->E
-      {
-        xoffset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
-        yoffset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(indices);
-        zoffset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
-        nx = ms_.index_spaces[N][TD].template size();
-        ny = ms_.index_spaces[N][TD+1].template size();
-
-        //Ex
-        adj.push_back(xoffset);
-        adj.push_back(entities<TD,N,0,-1,0>(xoffset));
-      
-        //Ey
-        adj.push_back(yoffset+nx);
-        adj.push_back(entities<TD,N,-1,0,0>(yoffset+nx));
-        
-        //Ez
-        adj.push_back(zoffset+nx+ny);
-        adj.push_back(entities<TD,N,0,0,-1>(zoffset+nx+ny));
-      }
-      else if ((FD==0)&&(TD==2)) //V-->F
-      {
-        xoffset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
-        yoffset = ms_.index_spaces[N][TD+3].template get_offset_from_indices(indices);
-        zoffset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
-        nx = ms_.index_spaces[N][TD+2].template size();
-        ny = ms_.index_spaces[N][TD+3].template size();
-
-        //Fx
-        adj.push_back(xoffset);
-        adj.push_back(entities<TD,N,0,-1,0>(xoffset));
-        adj.push_back(entities<TD,N,0,-1,-1>(xoffset));
-        adj.push_back(entities<TD,N,0,0,-1>(xoffset));
-      
-        //Fy
-        adj.push_back(yoffset+nx);
-        adj.push_back(entities<TD,N,-1,0,0>(yoffset+nx));
-        adj.push_back(entities<TD,N,-1,0,-1>(yoffset+nx));
-        adj.push_back(entities<TD,N,0,0,-1>(yoffset+nx));
-        
-        //Fz
-        adj.push_back(zoffset+nx+ny);
-        adj.push_back(entities<TD,N,-1,0,0>(zoffset+nx+ny));
-        adj.push_back(entities<TD,N,-1,-1,0>(zoffset+nx+ny));
-        adj.push_back(entities<TD,N,0,-1,0>(zoffset+nx+ny));
-      }
-      else if ((FD == 0) && (TD == 3)) //V-->C
-      {
-        offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
-        adj.push_back(offset);
-        adj.push_back(entities<TD,N,-1,0,0>(offset));
-        adj.push_back(entities<TD,N,-1,-1,0>(offset));
-        adj.push_back(entities<TD,N,0,-1,0>(offset));
-        adj.push_back(entities<TD,N,0,0,-1>(offset));
-        adj.push_back(entities<TD,N,-1,0,-1>(offset));
-        adj.push_back(entities<TD,N,-1,-1,-1>(offset));
-        adj.push_back(entities<TD,N,0,-1,-1>(offset));
-      }
-      else if ((FD == 1) && (TD == 2)) //E-->F
-     {
-        if (ent < ms_.index_spaces[N][FD].template size()) //Ex -->F
-        {
-          xoffset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
-          zoffset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
-          nx = ms_.index_spaces[N][TD+2].template size();
-          ny = ms_.index_spaces[N][TD+3].template size();
-  
-          //Fx
-          adj.push_back(xoffset);
-          adj.push_back(entities<TD,N,0,0,-1>(xoffset));
-
-          //Fz
-          adj.push_back(zoffset+nx+ny);
-          adj.push_back(entities<TD,N,-1,0,-1>(zoffset+nx+ny));
-
-        }
-        else if ((ent < ms_.index_spaces[N][FD+1].template size()) && (ent >= ms_.index_spaces[N][FD].template size()))//Ey -->F
-        {
-          yoffset = ms_.index_spaces[N][TD+3].template get_offset_from_indices(indices);
-          zoffset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
-          nx = ms_.index_spaces[N][TD+2].template size();
-          ny = ms_.index_spaces[N][TD+3].template size();
-  
-          //Fy
-          adj.push_back(yoffset+nx);
-          adj.push_back(entities<TD,N,0,0,-1>(yoffset+nx));
-
-          //Fz
-          adj.push_back(zoffset+nx+ny);
-          adj.push_back(entities<TD,N,-1,0,0>(zoffset+nx+ny));
-        } 
-        else if ((ent < ms_.index_spaces[N][FD+2].template size()) && (ent >= ms_.index_spaces[N][FD+1].template size()))//Ez -->F
-        {
-          xoffset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
-          yoffset = ms_.index_spaces[N][TD+3].template get_offset_from_indices(indices);
-          nx = ms_.index_spaces[N][TD+2].template size();
-          ny = ms_.index_spaces[N][TD+3].template size();
-  
-          //Fx
-          adj.push_back(xoffset);
-          adj.push_back(entities<TD,N,0,-1,0>(xoffset));
-
-          //Fy
-          adj.push_back(yoffset+nx);
-          adj.push_back(entities<TD,N,-1,0,0>(yoffset+nx));
-        } 
-      }
-      else if ((FD == 1) && (TD == 3)) //E-->C
-      {
-        if (ent < ms_.index_spaces[N][FD].template size()) //Ex -->C
-        {
-          offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
-          
-          adj.push_back(offset);
-          adj.push_back(entities<TD,N,-1,0,0>(offset));
-          adj.push_back(entities<TD,N,-1,0,-1>(offset));
-          adj.push_back(entities<TD,N,0,0,-1>(offset));
-
-        }
-        else if ((ent < ms_.index_spaces[N][FD+1].template size()) && (ent >= ms_.index_spaces[N][FD].template size()))//Ey -->C
-        {
-          offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
-          
-          adj.push_back(offset);
-          adj.push_back(entities<TD,N,0,-1,0>(offset));
-          adj.push_back(entities<TD,N,0,-1,-1>(offset));
-          adj.push_back(entities<TD,N,0,0,-1>(offset));
-
-        } 
-        else if ((ent < ms_.index_spaces[N][FD+2].template size()) && (ent >= ms_.index_spaces[N][FD+1].template size()))//Ez -->C
-        {
-          offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
-          
-          adj.push_back(offset);
-          adj.push_back(entities<TD,N,-1,0,0>(offset));
-          adj.push_back(entities<TD,N,-1,-1,0>(offset));
-          adj.push_back(entities<TD,N,0,-1,0>(offset));
-        } 
-      }
-      else if ((FD == 2) && (TD == 3)) //F-->C
-      {
-        if (ent < ms_.index_spaces[N][FD+2].template size()) //Fx -->C
-        {
-          offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
-          
-          adj.push_back(offset);
-          adj.push_back(entities<TD,N,-1,0,0>(offset));
-        }
-        else if ((ent < ms_.index_spaces[N][FD+3].template size()) && (ent >= ms_.index_spaces[N][FD+2].template size()))//Fy -->C
-        {
-          offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
-          
-          adj.push_back(offset);
-          adj.push_back(entities<TD,N,0,-1,0>(offset));
-        } 
-        else if ((ent < ms_.index_spaces[N][FD+4].template size()) && (ent >= ms_.index_spaces[N][FD+3].template size()))//Fz -->C
-        {
-          offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
-          
-          adj.push_back(offset);
-          adj.push_back(entities<TD,N,0,0,-1>(offset));
-        } 
-      }
-      else 
-        std::cerr<<"requesting wrong adjacency query";
+      adj = entities_up_3D_<FD,TD,N>(ent);
     }
     else
      std::cerr<<"requesting adjacencies for entities with dimension greater than 3\n";
 
    return adj;    
   } //entities_up_
-  
+
+  // Down adjacencies
   template<size_t FD, size_t TD, size_t N>
   auto entities_down_(size_t ent)
+  {
+    id_vector_t adj;
+    
+    if (meshdim_ == 1)
+    {
+      adj = entities_down_1D_<FD,TD,N>(ent);
+    }
+    else if (meshdim_ == 2)
+    {
+     adj = entities_down_2D_<FD,TD,N>(ent);
+    }
+    else if (meshdim_ == 3)
+    {
+      adj = entities_down_3D_<FD,TD,N>(ent);
+    }
+    else
+     std::cerr<<"requesting adjacencies for entities with dimension greater than 3\n";
+
+   return adj;    
+  } //entities_down_
+
+   /****************************************************
+   *        Lowest level 1D up/down-adjacencies        *
+   *****************************************************/
+  template<size_t FD, size_t TD, size_t N>
+  auto entities_up_1D_(size_t ent)
   {
     id_vector_t adj, indices;
     size_t index = get_index_in_storage(ent, FD, N);
     indices = ms_.index_spaces[N][index].template get_indices_from_offset(ent);
     
-    if (meshdim_ == 1)
-    {
-     auto offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
+    assert(FD == 0);
+    auto offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
 
-     adj.push_back(offset);
-     adj.push_back(entities<TD,N,1>(offset));
+    adj.push_back(offset);
+    adj.push_back(entities<TD,N,-1>(offset));
+    return adj;
+  } //entities_up_1D_
+
+
+  template<size_t FD, size_t TD, size_t N>
+  auto entities_down_1D_(size_t ent)
+  {
+    id_vector_t adj, indices;
+    size_t index = get_index_in_storage(ent, FD, N);
+    indices = ms_.index_spaces[N][index].template get_indices_from_offset(ent);
+   
+    auto offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
+
+    adj.push_back(offset);
+    adj.push_back(entities<TD,N,1>(offset));
+    return adj;
+  }//entities_down_1D_
+
+
+  /****************************************************
+   *       Lowest level 2D up/down-adjacencies        *
+   ****************************************************/
+  template<size_t FD, size_t TD, size_t N>
+  auto entities_up_2D_(size_t ent)
+  {
+    id_vector_t adj, indices, ngb_indices;
+    size_t index = get_index_in_storage(ent, FD, N);
+    //indices = ms_.index_spaces[N][index].template get_indices_from_offset(ent);
+
+    size_t offset, xoffset, yoffset, nx;  
+
+    if ((FD == 0) && (TD == 1)) //V-->E
+    {
+      indices = ms_.index_spaces[N][index].template get_indices_from_offset(ent);
+      nx = ms_.index_spaces[N][TD].template size();
+ 
+      if (indices[0] <= (ms_.index_spaces[N][TD+1].template max<0>()))
+      { 
+        yoffset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(indices);
+        adj.push_back(yoffset+nx);
+      }        
+
+      if (indices[1] <= (ms_.index_spaces[N][TD].template max<1>()))
+      {
+        xoffset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
+        adj.push_back(xoffset);
+      }
+
+      if (indices[0] >= (ms_.index_spaces[N][TD+1].template min<0>()+1))
+      { 
+        ngb_indices = indices;
+        ngb_indices[0] = ngb_indices[0] - 1;
+        yoffset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(ngb_indices);
+        adj.push_back(yoffset+nx);
+      }        
+
+      if (indices[1] >= (ms_.index_spaces[N][TD].template min<1>()+1))
+      {
+        ngb_indices = indices;
+        ngb_indices[1] = ngb_indices[1] - 1;
+        xoffset = ms_.index_spaces[N][TD].template get_offset_from_indices(ngb_indices);
+        adj.push_back(xoffset); 
+      }
     }
-    else if (meshdim_ == 2)
+    else if ((FD == 0) && (TD == 2)) //V-->F
     {
-      size_t offset, xoffset, yoffset, nx;  
-
-      if ((FD == 1) && (TD == 0)) //E-->V
+      indices = ms_.index_spaces[N][index].template get_indices_from_offset(ent);
+      if ( (indices[0] <= (ms_.index_spaces[N][TD+1].template max<0>())) && 
+           (indices[1] <= (ms_.index_spaces[N][TD+1].template max<1>())) )
       {
-        if (ent < ms_.index_spaces[N][FD].template size())
-         {
-            offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
-          
-            adj.push_back(offset);
-            adj.push_back(entities<TD,N,0,1>(offset));
-         }
-         else if ((ent < ms_.index_spaces[N][FD+1].template size()) && (ent >= ms_.index_spaces[N][FD].template size()))
-         {
-            offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
-          
-            adj.push_back(offset);
-            adj.push_back(entities<TD,N,1,0>(offset));
-         }
-        else
-          std::cerr<<"error msg";
-      }
-      else if ((FD == 2) && (TD == 0)) //F-->V
-      {
-        offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
+        offset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(indices);
         adj.push_back(offset);
-        adj.push_back(entities<TD,N,1,0>(offset));
-        adj.push_back(entities<TD,N,1,1>(offset));
-        adj.push_back(entities<TD,N,0,1>(offset));
       }
-      else if ((FD == 2) && (TD == 1)) //F-->E
+
+     if ( (indices[0] >= (ms_.index_spaces[N][TD+1].template min<0>()+1)) && 
+           (indices[1] <= (ms_.index_spaces[N][TD+1].template max<1>())) )
       {
-        if (ent >= ms_.index_spaces[N][FD].template size()) //Ex -->F
+        ngb_indices = indices;
+        ngb_indices[0] = ngb_indices[0] - 1;
+        offset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(ngb_indices);
+        adj.push_back(offset);
+      }
+
+      if ( (indices[0] >= (ms_.index_spaces[N][TD+1].template min<0>()+1)) && 
+           (indices[1] >= (ms_.index_spaces[N][TD+1].template min<1>()+1)) )
+      {
+        ngb_indices = indices;
+        ngb_indices[0] = ngb_indices[0] - 1;
+        ngb_indices[1] = ngb_indices[1] - 1;
+        offset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(ngb_indices);
+        adj.push_back(offset);
+      }
+
+      if ( (indices[0] <= (ms_.index_spaces[N][TD+1].template max<0>())) && 
+           (indices[1] >= (ms_.index_spaces[N][TD+1].template min<1>()+1)) )
+      {
+        ngb_indices = indices;
+        ngb_indices[1] = ngb_indices[1] - 1;
+        offset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(ngb_indices);
+        adj.push_back(offset);
+      }
+    }
+    else if ((FD == 1) && (TD == 2)) //E-->F
+    {
+      if (ent < ms_.index_spaces[N][FD].template size()) //Ex -->F
+      {
+        indices = ms_.index_spaces[N][index].template get_indices_from_offset(ent);
+        if (indices[0] <= (ms_.index_spaces[N][TD+1].template max<0>()))
         {
-          offset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
+          offset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(indices);
           adj.push_back(offset);
-          adj.push_back(entities<TD,N,-1,0>(offset));
         }
-        else //Ey -->F
+
+        if (indices[0] >= (ms_.index_spaces[N][TD+1].template min<0>()+1))
         {
+          indices[0] = indices[0] - 1;
+          offset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(indices);
+          adj.push_back(offset);
+        }
+      }
+      else //Ey -->F
+      {
+        nx = ms_.index_spaces[N][FD].template size();
+        indices = ms_.index_spaces[N][index].template get_indices_from_offset(ent-nx);
+        if (indices[1] <= (ms_.index_spaces[N][TD+1].template max<1>()))
+        {
+          offset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(indices);
+          adj.push_back(offset);
+        }
+
+        if (indices[1] >= (ms_.index_spaces[N][TD+1].template min<1>()+1))
+        {
+          indices[1] = indices[1] - 1;
+          offset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(indices);
+          adj.push_back(offset);
+        }
+      } 
+    }
+    else
+      std::cerr<<"errs msg"<<std::endl;
+
+    return adj;
+  }//entities_up_2D_
+
+  template<size_t FD, size_t TD, size_t N>
+  auto entities_down_2D_(size_t ent)
+  {
+    id_vector_t adj, indices;
+    size_t index = get_index_in_storage(ent, FD, N);  
+    size_t offset, xoffset, yoffset, nx;  
+
+    if ((FD == 1) && (TD == 0)) //E-->V
+    {
+      if (ent < ms_.index_spaces[N][FD].template size()) //Ex-->V
+       {
+          indices = ms_.index_spaces[N][index].template get_indices_from_offset(ent);
+          offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
+          adj.push_back(offset);
+          adj.push_back(entities<TD,N,0,1>(offset));
+       }
+       else //Ey-->V
+       {
+          size_t nx = ms_.index_spaces[N][FD].template size();
+          indices = ms_.index_spaces[N][index].template get_indices_from_offset(ent-nx);
+          offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);   
+          adj.push_back(offset);
+          adj.push_back(entities<TD,N,1,0>(offset));
+       }
+    }
+    else if ((FD == 2) && (TD == 0)) //F-->V
+    {
+      indices = ms_.index_spaces[N][index].template get_indices_from_offset(ent);
+      offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
+      adj.push_back(offset);
+      adj.push_back(entities<TD,N,1,0>(offset));
+      adj.push_back(entities<TD,N,1,1>(offset));
+      adj.push_back(entities<TD,N,0,1>(offset));
+    }
+    else if ((FD == 2) && (TD == 1)) //F-->E
+    {
+      indices = ms_.index_spaces[N][index].template get_indices_from_offset(ent);
+      nx = ms_.index_spaces[N][TD].template size();
+      yoffset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(indices);
+      xoffset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);  
+      
+      adj.push_back(yoffset+nx);
+      adj.push_back(entities<TD,N,1,0>(xoffset)); 
+      adj.push_back(entities<TD,N,0,1>(yoffset+nx));     
+      adj.push_back(xoffset);
+    }
+
+    return adj;
+  }//entities_down_2D_
+
+
+
+  /****************************************************
+   *       Lowest level 3D up/down-adjacencies        *
+   ****************************************************/
+  template<size_t FD, size_t TD, size_t N>
+  auto entities_up_3D_(size_t ent)
+  {
+    id_vector_t adj, indices;
+    size_t index = get_index_in_storage(ent, FD, N);
+    indices = ms_.index_spaces[N][index].template get_indices_from_offset(ent);
+
+    size_t offset, xoffset, yoffset, zoffset;
+    size_t nx, ny;  
+
+    if ((FD == 0) && (TD == 1)) //V-->E
+    {
+      xoffset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
+      yoffset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(indices);
+      zoffset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
+      nx = ms_.index_spaces[N][TD].template size();
+      ny = ms_.index_spaces[N][TD+1].template size();
+
+        //Ex
+      adj.push_back(xoffset);
+      adj.push_back(entities<TD,N,0,-1,0>(xoffset));
+      
+        //Ey
+      adj.push_back(yoffset+nx);
+      adj.push_back(entities<TD,N,-1,0,0>(yoffset+nx));
+
+        //Ez
+      adj.push_back(zoffset+nx+ny);
+      adj.push_back(entities<TD,N,0,0,-1>(zoffset+nx+ny));
+    }
+    else if ((FD==0)&&(TD==2)) //V-->F
+    {
+      xoffset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
+      yoffset = ms_.index_spaces[N][TD+3].template get_offset_from_indices(indices);
+      zoffset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
+      nx = ms_.index_spaces[N][TD+2].template size();
+      ny = ms_.index_spaces[N][TD+3].template size();
+
+      //Fx
+      adj.push_back(xoffset);
+      adj.push_back(entities<TD,N,0,-1,0>(xoffset));
+      adj.push_back(entities<TD,N,0,-1,-1>(xoffset));
+      adj.push_back(entities<TD,N,0,0,-1>(xoffset));
+
+      //Fy
+      adj.push_back(yoffset+nx);
+      adj.push_back(entities<TD,N,-1,0,0>(yoffset+nx));
+      adj.push_back(entities<TD,N,-1,0,-1>(yoffset+nx));
+      adj.push_back(entities<TD,N,0,0,-1>(yoffset+nx));
+      
+      //Fz
+      adj.push_back(zoffset+nx+ny);
+      adj.push_back(entities<TD,N,-1,0,0>(zoffset+nx+ny));
+      adj.push_back(entities<TD,N,-1,-1,0>(zoffset+nx+ny));
+      adj.push_back(entities<TD,N,0,-1,0>(zoffset+nx+ny));
+    }
+    else if ((FD == 0) && (TD == 3)) //V-->C
+    {
+      offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
+      adj.push_back(offset);
+      adj.push_back(entities<TD,N,-1,0,0>(offset));
+      adj.push_back(entities<TD,N,-1,-1,0>(offset));
+      adj.push_back(entities<TD,N,0,-1,0>(offset));
+      adj.push_back(entities<TD,N,0,0,-1>(offset));
+      adj.push_back(entities<TD,N,-1,0,-1>(offset));
+      adj.push_back(entities<TD,N,-1,-1,-1>(offset));
+      adj.push_back(entities<TD,N,0,-1,-1>(offset));
+    }
+    else if ((FD == 1) && (TD == 2)) //E-->F
+   {
+      if (ent < ms_.index_spaces[N][FD].template size()) //Ex -->F
+      {
+        xoffset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
+        zoffset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
+        nx = ms_.index_spaces[N][TD+2].template size();
+        ny = ms_.index_spaces[N][TD+3].template size();
+
+        //Fx
+        adj.push_back(xoffset);
+        adj.push_back(entities<TD,N,0,0,-1>(xoffset));
+
+        //Fz
+        adj.push_back(zoffset+nx+ny);
+        adj.push_back(entities<TD,N,-1,0,-1>(zoffset+nx+ny));
+
+      }
+      else if ((ent < ms_.index_spaces[N][FD+1].template size()) && (ent >= ms_.index_spaces[N][FD].template size()))//Ey -->F
+      {
+        yoffset = ms_.index_spaces[N][TD+3].template get_offset_from_indices(indices);
+        zoffset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
+        nx = ms_.index_spaces[N][TD+2].template size();
+        ny = ms_.index_spaces[N][TD+3].template size();
+
+        //Fy
+        adj.push_back(yoffset+nx);
+        adj.push_back(entities<TD,N,0,0,-1>(yoffset+nx));
+
+        //Fz
+        adj.push_back(zoffset+nx+ny);
+        adj.push_back(entities<TD,N,-1,0,0>(zoffset+nx+ny));
+      } 
+      else if ((ent < ms_.index_spaces[N][FD+2].template size()) && (ent >= ms_.index_spaces[N][FD+1].template size()))//Ez -->F
+      {
+        xoffset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
+        yoffset = ms_.index_spaces[N][TD+3].template get_offset_from_indices(indices);
+        nx = ms_.index_spaces[N][TD+2].template size();
+        ny = ms_.index_spaces[N][TD+3].template size();
+
+        //Fx
+        adj.push_back(xoffset);
+        adj.push_back(entities<TD,N,0,-1,0>(xoffset));
+
+        //Fy
+        adj.push_back(yoffset+nx);
+        adj.push_back(entities<TD,N,-1,0,0>(yoffset+nx));
+      } 
+    }
+    else if ((FD == 1) && (TD == 3)) //E-->C
+    {
+      if (ent < ms_.index_spaces[N][FD].template size()) //Ex -->C
+      {
+        offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
+        
+        adj.push_back(offset);
+        adj.push_back(entities<TD,N,-1,0,0>(offset));
+        adj.push_back(entities<TD,N,-1,0,-1>(offset));
+        adj.push_back(entities<TD,N,0,0,-1>(offset));
+
+      }
+      else if ((ent < ms_.index_spaces[N][FD+1].template size()) && (ent >= ms_.index_spaces[N][FD].template size()))//Ey -->C
+      {
+        offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
+        
+        adj.push_back(offset);
+        adj.push_back(entities<TD,N,0,-1,0>(offset));
+        adj.push_back(entities<TD,N,0,-1,-1>(offset));
+        adj.push_back(entities<TD,N,0,0,-1>(offset));
+
+      } 
+      else if ((ent < ms_.index_spaces[N][FD+2].template size()) && (ent >= ms_.index_spaces[N][FD+1].template size()))//Ez -->C
+      {
+        offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
+        
+        adj.push_back(offset);
+        adj.push_back(entities<TD,N,-1,0,0>(offset));
+        adj.push_back(entities<TD,N,-1,-1,0>(offset));
+        adj.push_back(entities<TD,N,0,-1,0>(offset));
+      } 
+    }
+    else if ((FD == 2) && (TD == 3)) //F-->C
+    {
+      if (ent < ms_.index_spaces[N][FD+2].template size()) //Fx -->C
+      {
+        offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
+        
+        adj.push_back(offset);
+        adj.push_back(entities<TD,N,-1,0,0>(offset));
+      }
+      else if ((ent < ms_.index_spaces[N][FD+3].template size()) && (ent >= ms_.index_spaces[N][FD+2].template size()))//Fy -->C
+      {
+        offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
+        
+        adj.push_back(offset);
+        adj.push_back(entities<TD,N,0,-1,0>(offset));
+      } 
+      else if ((ent < ms_.index_spaces[N][FD+4].template size()) && (ent >= ms_.index_spaces[N][FD+3].template size()))//Fz -->C
+      {
+        offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
+        
+        adj.push_back(offset);
+        adj.push_back(entities<TD,N,0,0,-1>(offset));
+      } 
+    }
+    else 
+      std::cerr<<"requesting wrong adjacency query";
+  
+  return adj;
+
+  }//entities_up_3D_
+
+  
+  template<size_t FD, size_t TD, size_t N>
+  auto entities_down_3D_(size_t ent)
+  {
+    id_vector_t adj, indices;
+    size_t index = get_index_in_storage(ent, FD, N);
+    indices = ms_.index_spaces[N][index].template get_indices_from_offset(ent);
+ 
+    size_t offset, xoffset, yoffset, zoffset;
+    size_t nx, ny;  
+
+    if ((FD == 1) && (TD == 0)) //E-->V
+    {
+       if (ent < ms_.index_spaces[N][FD].template size())
+       {
+          offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
+        
+          adj.push_back(offset);
+          adj.push_back(entities<TD,N,0,1,0>(offset));
+       }
+       else if ((ent < ms_.index_spaces[N][FD+1].template size()) && (ent >= ms_.index_spaces[N][FD].template size()))
+       {
+          offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
+        
+          adj.push_back(offset);
+          adj.push_back(entities<TD,N,1,0,0>(offset));
+       }
+       else if ((ent < ms_.index_spaces[N][FD+2].template size()) && (ent >= ms_.index_spaces[N][FD+1].template size()))
+       {
+          offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
+        
+          adj.push_back(offset);
+          adj.push_back(entities<TD,N,0,0,1>(offset));
+       }
+       else
+        std::cerr<<"error mesg";
+    }
+    else if ((FD==2)&&(TD==0)) //F-->V
+    {
+       if (ent < ms_.index_spaces[N][FD+2].template size())
+       {
+          offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
+        
+          adj.push_back(offset);
+          adj.push_back(entities<TD,N,0,1,0>(offset));
+          adj.push_back(entities<TD,N,0,1,1>(offset));
+          adj.push_back(entities<TD,N,0,0,1>(offset));
+       }
+       else if ((ent < ms_.index_spaces[N][FD+3].template size()) && (ent >= ms_.index_spaces[N][FD+2].template size()))
+       {
+          offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
+        
+          adj.push_back(offset);
+          adj.push_back(entities<TD,N,1,0,0>(offset));
+          adj.push_back(entities<TD,N,1,0,1>(offset));
+          adj.push_back(entities<TD,N,0,0,1>(offset));
+       }
+       else if ((ent < ms_.index_spaces[N][FD+4].template size()) && (ent >= ms_.index_spaces[N][FD+3].template size()))
+       {
+          offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
+        
+          adj.push_back(offset);
+          adj.push_back(entities<TD,N,1,0,0>(offset));
+          adj.push_back(entities<TD,N,1,1,0>(offset));
+          adj.push_back(entities<TD,N,0,1,0>(offset));
+       }
+       else
+        std::cerr<<"error mesg";
+      
+    }
+    else if ((FD == 2) && (TD == 1)) //F-->E
+    {
+      if (ent < ms_.index_spaces[N][FD+2].template size())
+       {
+          xoffset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
+          zoffset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
+          nx = ms_.index_spaces[N][TD].template size();
+          ny = ms_.index_spaces[N][TD+1].template size();
+        
+          adj.push_back(xoffset);
+          adj.push_back(entities<TD,N,0,0,1>(xoffset));
+
+
+          adj.push_back(zoffset+nx+ny);
+          adj.push_back(entities<TD,N,0,1,0>(zoffset+nx+ny));
+          
+       }
+       else if ((ent < ms_.index_spaces[N][FD+3].template size()) && (ent >= ms_.index_spaces[N][FD+2].template size()))
+       {
+          yoffset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(indices);
+          zoffset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
+          nx = ms_.index_spaces[N][TD].template size();
+          ny = ms_.index_spaces[N][TD+1].template size();
+        
+          adj.push_back(yoffset+nx);
+          adj.push_back(entities<TD,N,0,0,1>(yoffset+nx));
+
+
+          adj.push_back(zoffset+nx+ny);
+          adj.push_back(entities<TD,N,1,0,0>(zoffset+nx+ny));
+       }
+       else if ((ent < ms_.index_spaces[N][FD+4].template size()) && (ent >= ms_.index_spaces[N][FD+3].template size()))
+       {
           xoffset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
           yoffset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(indices);
           nx = ms_.index_spaces[N][TD].template size();
-
-          adj.push_back(xoffset);
-          adj.push_back(entities<TD,N,1,0>(xoffset));
-          adj.push_back(yoffset+nx);
-          adj.push_back(entities<TD,N,0,1>(yoffset+nx));
-        } 
-      }
-    }
-    else if (meshdim_ == 3)
-    {
-      size_t offset, xoffset, yoffset, zoffset;
-      size_t nx, ny;  
-
-      if ((FD == 1) && (TD == 0)) //E-->V
-      {
-         if (ent < ms_.index_spaces[N][FD].template size())
-         {
-            offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
-          
-            adj.push_back(offset);
-            adj.push_back(entities<TD,N,0,1,0>(offset));
-         }
-         else if ((ent < ms_.index_spaces[N][FD+1].template size()) && (ent >= ms_.index_spaces[N][FD].template size()))
-         {
-            offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
-          
-            adj.push_back(offset);
-            adj.push_back(entities<TD,N,1,0,0>(offset));
-         }
-         else if ((ent < ms_.index_spaces[N][FD+2].template size()) && (ent >= ms_.index_spaces[N][FD+1].template size()))
-         {
-            offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
-          
-            adj.push_back(offset);
-            adj.push_back(entities<TD,N,0,0,1>(offset));
-         }
-         else
-          std::cerr<<"error mesg";
-      }
-      else if ((FD==2)&&(TD==0)) //F-->V
-      {
-         if (ent < ms_.index_spaces[N][FD+2].template size())
-         {
-            offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
-          
-            adj.push_back(offset);
-            adj.push_back(entities<TD,N,0,1,0>(offset));
-            adj.push_back(entities<TD,N,0,1,1>(offset));
-            adj.push_back(entities<TD,N,0,0,1>(offset));
-         }
-         else if ((ent < ms_.index_spaces[N][FD+3].template size()) && (ent >= ms_.index_spaces[N][FD+2].template size()))
-         {
-            offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
-          
-            adj.push_back(offset);
-            adj.push_back(entities<TD,N,1,0,0>(offset));
-            adj.push_back(entities<TD,N,1,0,1>(offset));
-            adj.push_back(entities<TD,N,0,0,1>(offset));
-         }
-         else if ((ent < ms_.index_spaces[N][FD+4].template size()) && (ent >= ms_.index_spaces[N][FD+3].template size()))
-         {
-            offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
-          
-            adj.push_back(offset);
-            adj.push_back(entities<TD,N,1,0,0>(offset));
-            adj.push_back(entities<TD,N,1,1,0>(offset));
-            adj.push_back(entities<TD,N,0,1,0>(offset));
-         }
-         else
-          std::cerr<<"error mesg";
+          ny = ms_.index_spaces[N][TD+1].template size();
         
-      }
-      else if ((FD == 2) && (TD == 1)) //F-->E
-     {
-        if (ent < ms_.index_spaces[N][FD+2].template size())
-         {
-            xoffset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
-            zoffset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
-            nx = ms_.index_spaces[N][TD].template size();
-            ny = ms_.index_spaces[N][TD+1].template size();
-          
-            adj.push_back(xoffset);
-            adj.push_back(entities<TD,N,0,0,1>(xoffset));
+          adj.push_back(xoffset);
+          adj.push_back(entities<TD,N,1,0,0>(xoffset));
 
 
-            adj.push_back(zoffset+nx+ny);
-            adj.push_back(entities<TD,N,0,1,0>(zoffset+nx+ny));
-            
-         }
-         else if ((ent < ms_.index_spaces[N][FD+3].template size()) && (ent >= ms_.index_spaces[N][FD+2].template size()))
-         {
-            yoffset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(indices);
-            zoffset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
-            nx = ms_.index_spaces[N][TD].template size();
-            ny = ms_.index_spaces[N][TD+1].template size();
-          
-            adj.push_back(yoffset+nx);
-            adj.push_back(entities<TD,N,0,0,1>(yoffset+nx));
-
-
-            adj.push_back(zoffset+nx+ny);
-            adj.push_back(entities<TD,N,1,0,0>(zoffset+nx+ny));
-         }
-         else if ((ent < ms_.index_spaces[N][FD+4].template size()) && (ent >= ms_.index_spaces[N][FD+3].template size()))
-         {
-            xoffset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
-            yoffset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(indices);
-            nx = ms_.index_spaces[N][TD].template size();
-            ny = ms_.index_spaces[N][TD+1].template size();
-          
-            adj.push_back(xoffset);
-            adj.push_back(entities<TD,N,1,0,0>(xoffset));
-
-
-            adj.push_back(yoffset+nx);
-            adj.push_back(entities<TD,N,0,1,0>(yoffset+nx));
-         }
-         else
-          std::cerr<<"error mesg";
-      }
-      else if ((FD == 3) && (TD == 0)) //C-->V
-      {
-        offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
-
-        adj.push_back(xoffset);
-        adj.push_back(entities<TD,N,1,0,0>(offset));
-        adj.push_back(entities<TD,N,1,1,0>(offset));
-        adj.push_back(entities<TD,N,0,1,0>(offset));
-        adj.push_back(entities<TD,N,0,0,1>(offset));
-        adj.push_back(entities<TD,N,1,0,1>(offset));
-        adj.push_back(entities<TD,N,1,1,1>(offset));
-        adj.push_back(entities<TD,N,0,1,1>(offset));
-       
-      }
-      else if ((FD == 3) && (TD == 1)) //C-->E
-      {
-         xoffset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
-         xoffset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(indices);
-         zoffset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
-         nx = ms_.index_spaces[N][TD].template size();
-         ny = ms_.index_spaces[N][TD+1].template size();
-          
-         adj.push_back(xoffset);
-         adj.push_back(entities<TD,N,1,0,0>(xoffset));
-         adj.push_back(entities<TD,N,1,0,1>(xoffset));
-         adj.push_back(entities<TD,N,0,0,1>(xoffset));
-
-         adj.push_back(yoffset+nx);
-         adj.push_back(entities<TD,N,0,1,0>(yoffset+nx));
-         adj.push_back(entities<TD,N,0,1,1>(yoffset+nx));
-         adj.push_back(entities<TD,N,0,0,1>(yoffset+nx));
-
-         adj.push_back(zoffset+nx+ny);
-         adj.push_back(entities<TD,N,1,0,0>(zoffset+nx+ny));
-         adj.push_back(entities<TD,N,1,1,0>(zoffset+nx+ny));
-         adj.push_back(entities<TD,N,0,1,0>(zoffset+nx+ny));
-      }
-      else if ((FD == 3) && (TD == 2)) //C-->F
-      {
-         xoffset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
-         xoffset = ms_.index_spaces[N][TD+3].template get_offset_from_indices(indices);
-         zoffset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
-         nx = ms_.index_spaces[N][TD+2].template size();
-         ny = ms_.index_spaces[N][TD+3].template size();
-          
-         adj.push_back(xoffset);
-         adj.push_back(entities<TD,N,1,0,0>(xoffset));
-
-         adj.push_back(yoffset+nx);
-         adj.push_back(entities<TD,N,0,1,0>(yoffset+nx));
-
-         adj.push_back(zoffset+nx+ny);
-         adj.push_back(entities<TD,N,0,0,1>(zoffset+nx+ny));
-      }
-      else 
-        std::cerr<<"requesting wrong adjacency query";
+          adj.push_back(yoffset+nx);
+          adj.push_back(entities<TD,N,0,1,0>(yoffset+nx));
+       }
+       else
+        std::cerr<<"error mesg";
     }
-    else
-     std::cerr<<"requesting adjacencies for entities with dimension greater than 3\n";
-    return adj;
+    else if ((FD == 3) && (TD == 0)) //C-->V
+    {
+      offset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
+
+      adj.push_back(xoffset);
+      adj.push_back(entities<TD,N,1,0,0>(offset));
+      adj.push_back(entities<TD,N,1,1,0>(offset));
+      adj.push_back(entities<TD,N,0,1,0>(offset));
+      adj.push_back(entities<TD,N,0,0,1>(offset));
+      adj.push_back(entities<TD,N,1,0,1>(offset));
+      adj.push_back(entities<TD,N,1,1,1>(offset));
+      adj.push_back(entities<TD,N,0,1,1>(offset));
+     
+    }
+    else if ((FD == 3) && (TD == 1)) //C-->E
+    {
+       xoffset = ms_.index_spaces[N][TD].template get_offset_from_indices(indices);
+       xoffset = ms_.index_spaces[N][TD+1].template get_offset_from_indices(indices);
+       zoffset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
+       nx = ms_.index_spaces[N][TD].template size();
+       ny = ms_.index_spaces[N][TD+1].template size();
+        
+       adj.push_back(xoffset);
+       adj.push_back(entities<TD,N,1,0,0>(xoffset));
+       adj.push_back(entities<TD,N,1,0,1>(xoffset));
+       adj.push_back(entities<TD,N,0,0,1>(xoffset));
+
+       adj.push_back(yoffset+nx);
+       adj.push_back(entities<TD,N,0,1,0>(yoffset+nx));
+       adj.push_back(entities<TD,N,0,1,1>(yoffset+nx));
+       adj.push_back(entities<TD,N,0,0,1>(yoffset+nx));
+
+       adj.push_back(zoffset+nx+ny);
+       adj.push_back(entities<TD,N,1,0,0>(zoffset+nx+ny));
+       adj.push_back(entities<TD,N,1,1,0>(zoffset+nx+ny));
+       adj.push_back(entities<TD,N,0,1,0>(zoffset+nx+ny));
+    }
+    else if ((FD == 3) && (TD == 2)) //C-->F
+    {
+       xoffset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
+       xoffset = ms_.index_spaces[N][TD+3].template get_offset_from_indices(indices);
+       zoffset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
+       nx = ms_.index_spaces[N][TD+2].template size();
+       ny = ms_.index_spaces[N][TD+3].template size();
+        
+       adj.push_back(xoffset);
+       adj.push_back(entities<TD,N,1,0,0>(xoffset));
+
+       adj.push_back(yoffset+nx);
+       adj.push_back(entities<TD,N,0,1,0>(yoffset+nx));
+
+       adj.push_back(zoffset+nx+ny);
+       adj.push_back(entities<TD,N,0,0,1>(zoffset+nx+ny));
+    }
+    else 
+      std::cerr<<"requesting wrong adjacency query";
+  
+  return adj;
       
-  } //entities_down_
+  } //entities_down_3D_
   
 
   //Utility methods

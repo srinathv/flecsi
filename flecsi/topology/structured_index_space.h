@@ -52,17 +52,14 @@ public:
      id_t current;
   };
 
-  //constructors
-// structured_index_space(const id_vector_t &lbnds,const id_vector_t &ubnds) 
+  //initialization
   void init(const id_vector_t &lbnds, const id_vector_t &ubnds) 
    {
     assert(lbnds.size() == ubnds.size());
 
     size_t count = 1;
     for (size_t b = 0; b < lbnds.size(); ++b)
-    {
       count *= ubnds[b]-lbnds[b]+1;
-    }
    
     offset_ = 0;
     size_ = count;
@@ -78,9 +75,7 @@ public:
     
    }
 
-  //structured_index_space(size_t offset,size_t size):offset_{offset}, size_{size}{};
-  //structured_index_space(size_t size):offset_{0}, size_{size}{};
-
+  //default constructor
   structured_index_space(){};
 
   //provide slicing
@@ -90,6 +85,11 @@ public:
 
   ~structured_index_space(){};
 
+  /*template<class S = E>
+  auto slice()
+  {
+    return structured_index_space<S>(*this);
+  }*/
  
   auto begin()
   {
@@ -106,12 +106,6 @@ public:
     return size_;
   }
 
-  /*template<class S = E>
-  auto slice()
-  {
-    return structured_index_space<S>(*this);
-  }*/
-
   id_t get_offset_from_indices(id_vector_t &idv) 
   {
     //add range check for idv to make sure it lies within the bounds
@@ -122,7 +116,7 @@ public:
     for (int i = 0; i <dim_; ++i)
     {
       factor = 1;
-      for (int j=i+1; j<dim_; ++j)
+      for (int j=i; j<dim_-1; ++j)
       {
         factor *= upper_bnds_[j]-lower_bnds_[j]+1;
       }
@@ -168,6 +162,20 @@ public:
 template<size_t D>
 bool check_index_limits(size_t index){
   return (index >= lower_bnds_[D] && index <= upper_bnds_[D]);
+}
+
+template<size_t D>
+auto max()
+{
+  auto val = upper_bnds_[D];
+  return val;
+}
+
+template<size_t D>
+auto min()
+{
+  auto val = lower_bnds_[D];
+  return val;
 }
  
  private:
