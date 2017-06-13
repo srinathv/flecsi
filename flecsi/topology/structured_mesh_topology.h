@@ -1,6 +1,5 @@
 /*~--------------------------------------------------------------------------~*
  *  @@@@@@@@  @@           @@@@@@   @@@@@@@@ @@
- * /@@/////  /@@          @@////@@ @@////// /@@
  * /@@       /@@  @@@@@  @@    // /@@       /@@
  * /@@@@@@@  /@@ @@///@@/@@       /@@@@@@@@@/@@
  * /@@////   /@@/@@@@@@@/@@       ////////@@/@@
@@ -116,6 +115,9 @@ public:
   structured_mesh_topology_t()
   {
       meshdim_ = MT::num_dimensions;  
+      meshbnds_low_.insert(meshbnds_low_.begin(),  MT::lower_bounds.begin(), MT::lower_bounds.end());
+      meshbnds_up_.insert(meshbnds_up_.begin(),  MT::upper_bounds.begin(), MT::upper_bounds.end());
+
       id_vector_t vec, ubnds;      
       for (size_t i = 0; i < pow(2,meshdim_); ++i){
         ubnds.clear();
@@ -134,10 +136,7 @@ public:
 }
 
   // mesh destructor
-  virtual ~structured_mesh_topology_t()
-  {
-  }
-
+  virtual ~structured_mesh_topology_t(){}
   
 // Virtual method of num_entities_()
   size_t
@@ -179,6 +178,16 @@ public:
   auto get_offset(id_vector_t &idv) 
   {
     return ms_.index_spaces[M][D].template get_offset_from_indices(idv);
+  }
+
+  auto lower_bounds()
+  {
+    return meshbnds_low_;
+  }
+
+  auto upper_bounds()
+  {
+    return meshbnds_up_;
   }
 
   //Query type 1: Provides traversal over whole index space
@@ -260,7 +269,7 @@ auto entities(size_t ent)
 template<size_t D, size_t N, std::intmax_t xoff, std::intmax_t yoff>
 auto entities(size_t ent)
 {
-    assert(!((xoff == 0) && (yoff ==0))); 
+    assert(!((xoff == 0) && (yoff == 0))); 
     size_t ind = get_index_in_storage(ent,D,N);
     size_t value = ent;
     size_t nx;
@@ -270,26 +279,42 @@ auto entities(size_t ent)
 
     auto indices = ms_.index_spaces[N][ind].template get_indices_from_offset(ent);
     
-    //std::cout<<"indices = ["<<indices[0]<<", "<<indices[1]<<" ]"<<std::endl;
-    
     if((ms_.index_spaces[N][ind].template check_index_limits<0>(xoff+indices[0]))
        && (ms_.index_spaces[N][ind].template check_index_limits<1>(yoff+indices[1])))
     {
       nx = ms_.index_spaces[N][ind].template get_size_in_direction(0);
       value += xoff + nx*yoff;
     }
-    //else 
-     //  value = -1;
-    return value; 
+  return value; 
 } //entities
 
 template<size_t D, size_t N, std::intmax_t xoff, std::intmax_t yoff, std::intmax_t zoff>
 auto entities(size_t ent)
 {
-    assert((xoff != 0) && (yoff !=0) && (zoff !=0)); 
+    assert(!((xoff == 0) && (yoff == 0) && (zoff == 0))); 
     size_t ind = get_index_in_storage(ent,D,N);
     size_t value = ent;
     size_t nx, ny;
+    
+    if (ind == 2) //edge-y
+    {
+      ent = ent - ms_.index_spaces[N][1].template size();
+    }
+    else if (ind == 3)//edge-z
+    {
+      ent = ent - (ms_.index_spaces[N][1].template size()) - (ms_.index_spaces[N][2].template size());
+    }
+    else if (ind == 5)//face-y
+    {
+      ent = ent - ms_.index_spaces[N][4].template size();
+    }
+    else if (ind == 6)//face-z
+    {
+      ent = ent - (ms_.index_spaces[N][4].template size()) - (ms_.index_spaces[N][5].template size());
+    }
+    else
+      ent = ent;
+
     auto indices = ms_.index_spaces[N][ind].template get_indices_from_offset(ent);
     if((ms_.index_spaces[N][ind].template check_index_limits<0>(xoff+indices[0]))
        && (ms_.index_spaces[N][ind].template check_index_limits<1>(yoff+indices[1]))
@@ -308,6 +333,8 @@ auto entities(size_t ent)
 private:
 
   size_t meshdim_; 
+  id_vector_t meshbnds_low_;
+  id_vector_t meshbnds_up_;
   structured_mesh_storage_t<MT::num_dimensions, MT::num_domains> ms_;
 
 
@@ -1073,15 +1100,15 @@ private:
     {
       switch(dim)
       {
-          case 0:
+        case 0:
           index = 0;
           break;
         case 1: 
           if (ent < ms_.index_spaces[dom][dim].template size())
               index = 1;
-          else if ((ent < ms_.index_spaces[dom][dim+1].template size()) && (ent >= ms_.index_spaces[dom][dim].template size()))
+          else if ((ent < (ms_.index_spaces[dom][dim+1].template size())+(ms_.index_spaces[dom][dim].template size())) && (ent >= ms_.index_spaces[dom][dim].template size()))
               index = 2; 
-          else if ((ent < ms_.index_spaces[dom][dim+2].template size()) && (ent >= ms_.index_spaces[dom][dim+1].template size())) 
+          else if ((ent < (ms_.index_spaces[dom][dim+2].template size())+(ms_.index_spaces[dom][dim+1].template size())+(ms_.index_spaces[dom][dim].template size())) && (ent >= (ms_.index_spaces[dom][dim+1].template size())+(ms_.index_spaces[dom][dim].template size()))) 
              index = 3;
           else 
             std::cerr<<"non-valid index request";
@@ -1089,9 +1116,9 @@ private:
         case 2:
           if (ent < ms_.index_spaces[dom][dim+2].template size())
               index = 4;
-          else if ((ent < ms_.index_spaces[dom][dim+3].template size()) && (ent >= ms_.index_spaces[dom][dim+2].template size()))
+          else if ((ent < (ms_.index_spaces[dom][dim+3].template size())+(ms_.index_spaces[dom][dim+2].template size())) && (ent >= ms_.index_spaces[dom][dim+2].template size()))
               index = 5; 
-          else if ((ent < ms_.index_spaces[dom][dim+4].template size()) && (ent >= ms_.index_spaces[dom][dim+3].template size())) 
+          else if ((ent < (ms_.index_spaces[dom][dim+4].template size())+(ms_.index_spaces[dom][dim+3].template size())+(ms_.index_spaces[dom+2][dim].template size())) && (ent >= (ms_.index_spaces[dom][dim+3].template size())+(ms_.index_spaces[dom][dim+2].template size()))) 
              index = 6;
           else 
             std::cerr<<"non-valid index request";

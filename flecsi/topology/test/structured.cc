@@ -49,6 +49,12 @@ TEST(structured, simple){
   size_t nv, nex, ney, nf;
   id_vector_t adj;
 
+  auto lbnd = mesh->lower_bounds();
+  auto ubnd = mesh->upper_bounds();
+
+  CINCH_CAPTURE() << "2D Logically structured mesh with bounds: [" <<lbnd[0]<<
+  ", "<<lbnd[1]<<"] - ["<<ubnd[0]<<", "<<ubnd[1]<<"] \n"<< endl;
+
   nv = mesh->num_entities(0,0);
   nex = mesh->num_entities(1,0);
   ney = mesh->num_entities(2,0);
@@ -58,8 +64,10 @@ TEST(structured, simple){
   CINCH_CAPTURE() << "NE_X = "<< nex << endl;
   CINCH_CAPTURE() << "NE_Y = "<< ney << endl;
   CINCH_CAPTURE() << "NF = " << nf << endl;
+  CINCH_CAPTURE()<<endl;
  
   //Loop over all vertices and test intra index space queries
+  CINCH_CAPTURE()<<"------Vertices------"<<endl;
   for (auto vertex: mesh->entities<0>()){
    CINCH_CAPTURE() << "---- vertex id: " << vertex << endl; 
    CINCH_CAPTURE() << "  -- indices "<< endl; 
@@ -81,10 +89,12 @@ TEST(structured, simple){
    CINCH_CAPTURE() << "  -- query V-->F "<< endl; 
    for (auto face : mesh->get_entities<0,2,0>(vertex))
     CINCH_CAPTURE() << "  ---- " <<face<< endl; 
+  
+   CINCH_CAPTURE()<<endl;
   }
-
   
   //Loop over all edges in X-direction and test intra index space queries
+  CINCH_CAPTURE()<<"------Edges-X------"<<endl;
   for (auto edgex: mesh->entities<1>()){
    CINCH_CAPTURE() << "---- edgex id: " << edgex << endl;
    CINCH_CAPTURE() << "  -- indices "<< endl; 
@@ -106,9 +116,12 @@ TEST(structured, simple){
    CINCH_CAPTURE() << "  -- query E-->F "<< endl; 
    for (auto face : mesh->get_entities<1,2,0>(edgex))
     CINCH_CAPTURE() << "  ---- " <<face<< endl; 
+   CINCH_CAPTURE()<<endl;
   }
 
+  
   //Loop over all edges in Y-directions and test intra index space queries
+  CINCH_CAPTURE()<<"------Edges-Y------"<<endl;
   for (auto edgey: mesh->entities<2>()){
    CINCH_CAPTURE() << "---- edgey id: " << edgey << endl;
    CINCH_CAPTURE() << "  -- indices "<< endl; 
@@ -130,9 +143,12 @@ TEST(structured, simple){
    CINCH_CAPTURE() << "  -- query E-->F "<< endl; 
    for (auto face : mesh->get_entities<1,2,0>(edgey+nex))
     CINCH_CAPTURE() << "  ---- " <<face<< endl; 
-}
+   CINCH_CAPTURE()<<endl;
+  }
+ 
 
-   //Loop over all faces and test intra index space queries
+  //Loop over all faces and test intra index space queries
+  CINCH_CAPTURE()<<"------Faces------"<<endl;
   for (auto face: mesh->entities<3>()){
    CINCH_CAPTURE() << "---- face id: " << face << endl;
    CINCH_CAPTURE() << "  -- indices "<< endl; 
@@ -154,6 +170,7 @@ TEST(structured, simple){
    CINCH_CAPTURE() << "  -- query F-->E "<< endl; 
    for (auto edg : mesh->get_entities<2,1,0>(face))
     CINCH_CAPTURE() << "  ---- " <<edg<< endl; 
+   CINCH_CAPTURE()<<endl;
   }
   
 

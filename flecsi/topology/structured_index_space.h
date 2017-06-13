@@ -70,6 +70,9 @@ public:
     std::cout<<std::endl;
     for (size_t b=0; b<lower_bnds_.size();++b){
       std::cout<<"lower_bnds["<<b<<"]="<<lower_bnds_[b]<<std::endl;
+    }
+    std::cout<<std::endl;
+    for (size_t b=0; b<upper_bnds_.size();++b){
       std::cout<<"upper_bnds["<<b<<"]="<<upper_bnds_[b]<<std::endl;
     }
     
@@ -135,7 +138,7 @@ public:
     size_t rem = offset, value;
 
 
-    std::cout<<"entity = "<<offset<<std::endl;
+    //std::cout<<"entity = "<<offset<<std::endl;
 
     for (int i=0; i<dim_; ++i)
     {
@@ -148,7 +151,7 @@ public:
       id[dim_-i-1] = value;
       rem -= value*factor;
       
-      std::cout<<"factor ="<<factor<<", value = "<<value<<", rem = "<<rem<<std::endl;
+      //std::cout<<"factor ="<<factor<<", value = "<<value<<", rem = "<<rem<<std::endl;
     }
  
    return id;

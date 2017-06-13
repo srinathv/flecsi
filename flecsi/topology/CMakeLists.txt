@@ -117,6 +117,14 @@ cinch_add_unit(structured
     ${CINCH_RUNTIME_LIBRARIES}
 )
 
+cinch_add_unit(structured3d
+  SOURCES
+    test/structured3d.cc
+  LIBRARIES
+    flecsi
+    ${CINCH_RUNTIME_LIBRARIES}
+)
+
 #------------------------------------------------------------------------------#
 # Misc. unit tests.
 #------------------------------------------------------------------------------#
