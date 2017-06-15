@@ -119,7 +119,7 @@ public:
     for (int i = 0; i <dim_; ++i)
     {
       factor = 1;
-      for (int j=i; j<dim_-1; ++j)
+      for (int j=0; j<dim_-i-1; ++j)
       {
         factor *= upper_bnds_[j]-lower_bnds_[j]+1;
       }
@@ -138,12 +138,13 @@ public:
     size_t rem = offset, value;
 
 
-    //std::cout<<"entity = "<<offset<<std::endl;
+    std::cout<<"entity = "<<offset<<std::endl;
 
     for (int i=0; i<dim_; ++i)
     {
       factor = 1; 
-      for (int j=i; j<dim_-1; ++j)
+      //for (int j=i; j<dim_-1; ++j)
+      for (int j=0; j<dim_-i-1; ++j)
       {
        factor *= upper_bnds_[j]-lower_bnds_[j] + 1; 
       }
@@ -151,7 +152,7 @@ public:
       id[dim_-i-1] = value;
       rem -= value*factor;
       
-      //std::cout<<"factor ="<<factor<<", value = "<<value<<", rem = "<<rem<<std::endl;
+      std::cout<<"factor ="<<factor<<", value = "<<value<<", rem = "<<rem<<std::endl;
     }
  
    return id;

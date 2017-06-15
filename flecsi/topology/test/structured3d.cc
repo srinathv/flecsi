@@ -80,7 +80,9 @@ TEST(structured3d, simple){
    CINCH_CAPTURE() << "---- vertex id: " << vertex << endl; 
    CINCH_CAPTURE() << "  -- indices "<< endl; 
    for (auto idv : mesh->get_indices<0>(vertex))
-    CINCH_CAPTURE() << "  ---- " <<idv << endl; 
+    CINCH_CAPTURE() << "  ---- " <<idv << endl;
+   auto id = mesh->get_indices<0>(vertex); 
+   CINCH_CAPTURE() << "  ---- offset " <<mesh->get_offset<0>(id) << endl; 
 
    //V-->V
    CINCH_CAPTURE() << "  -- stencil [ 1  0  0] " <<mesh->entities< 0, 0, 1, 0, 0 >(vertex) << endl;
@@ -90,7 +92,7 @@ TEST(structured3d, simple){
    CINCH_CAPTURE() << "  -- stencil [ 0  0  1] " <<mesh->entities< 0, 0, 0, 0, 1 >(vertex) << endl;
    CINCH_CAPTURE() << "  -- stencil [ 0  0 -1] " <<mesh->entities< 0, 0, 0, 0,-1 >(vertex) << endl;
 
-  std::cout<<"v = "<<vertex<<std::endl;
+  //std::cout<<"v = "<<vertex<<std::endl;
   
    //V-->E
    CINCH_CAPTURE() << "  -- query V-->E "<< endl; 
@@ -264,16 +266,19 @@ TEST(structured3d, simple){
    CINCH_CAPTURE() << "  -- stencil [ 0  0  1] " <<mesh->entities< 2, 0, 0, 0, 1 >(facey+nfx) << endl;
    CINCH_CAPTURE() << "  -- stencil [ 0  0 -1] " <<mesh->entities< 2, 0, 0, 0,-1 >(facey+nfx) << endl;
    
+   //std::cout<<"fy = "<<facey<<std::endl;
    //F-->V
    CINCH_CAPTURE() << "  -- query F-->V "<< endl; 
    for (auto vert : mesh->get_entities<2,0,0>(facey+nfx))
     CINCH_CAPTURE() << "  ---- " <<vert<< endl; 
    
+   //std::cout<<"fy = "<<facey<<std::endl;
    //F-->E
    CINCH_CAPTURE() << "  -- query F-->E "<< endl; 
    for (auto edge : mesh->get_entities<2,1,0>(facey+nfx))
     CINCH_CAPTURE() << "  ---- " <<edge<< endl; 
    
+//   std::cout<<"fy = "<<facey<<std::endl;
    //F-->C
    CINCH_CAPTURE() << "  -- query F-->C "<< endl; 
    for (auto cell : mesh->get_entities<2,3,0>(facey+nfx))
@@ -297,7 +302,9 @@ TEST(structured3d, simple){
    CINCH_CAPTURE() << "  -- stencil [ 0 -1  0] " <<mesh->entities< 2, 0, 0,-1, 0 >(facez+nfx+nfy) << endl;
    CINCH_CAPTURE() << "  -- stencil [ 0  0  1] " <<mesh->entities< 2, 0, 0, 0, 1 >(facez+nfx+nfy) << endl;
    CINCH_CAPTURE() << "  -- stencil [ 0  0 -1] " <<mesh->entities< 2, 0, 0, 0,-1 >(facez+nfx+nfy) << endl;
-   
+  
+ 
+   //std::cout<<"fz = "<<facez<<std::endl;
    //F-->V
    CINCH_CAPTURE() << "  -- query F-->V "<< endl; 
    for (auto vert : mesh->get_entities<2,0,0>(facez+nfx+nfy))
