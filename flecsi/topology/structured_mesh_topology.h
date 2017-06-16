@@ -828,7 +828,7 @@ private:
       
       if ( (indices[0] <= (ms_.index_spaces[N][TD+4].template max<0>())) && 
            (indices[1] <= (ms_.index_spaces[N][TD+4].template max<1>())) &&
-           (indices[2] >= (ms_.index_spaces[N][TD+4].template max<2>()+1))) 
+           (indices[2] >= (ms_.index_spaces[N][TD+4].template min<2>()+1))) 
       {
         ngb_indices = indices;
         ngb_indices[2] = ngb_indices[2] - 1;
@@ -838,7 +838,7 @@ private:
 
      if ( (indices[0] >= (ms_.index_spaces[N][TD+4].template min<0>()+1)) && 
            (indices[1] <= (ms_.index_spaces[N][TD+4].template max<1>()))  &&
-           (indices[2] >= (ms_.index_spaces[N][TD+4].template max<2>()+1)))
+           (indices[2] >= (ms_.index_spaces[N][TD+4].template min<2>()+1)))
       {
         ngb_indices = indices;
         ngb_indices[0] = ngb_indices[0] - 1;
@@ -849,7 +849,7 @@ private:
 
       if ( (indices[0] >= (ms_.index_spaces[N][TD+4].template min<0>()+1)) && 
            (indices[1] >= (ms_.index_spaces[N][TD+4].template min<1>()+1))  &&
-           (indices[2] >= (ms_.index_spaces[N][TD+4].template max<2>()+1)))
+           (indices[2] >= (ms_.index_spaces[N][TD+4].template min<2>()+1)))
       {
         ngb_indices = indices;
         ngb_indices[0] = ngb_indices[0] - 1;
@@ -861,7 +861,7 @@ private:
 
       if ( (indices[0] <= (ms_.index_spaces[N][TD+4].template max<0>())) && 
            (indices[1] >= (ms_.index_spaces[N][TD+4].template min<1>()+1)) &&
-           (indices[2] >= (ms_.index_spaces[N][TD+4].template max<2>()+1)))
+           (indices[2] >= (ms_.index_spaces[N][TD+4].template min<2>()+1)))
       {
         ngb_indices = indices;
         ngb_indices[1] = ngb_indices[1] - 1;
@@ -897,7 +897,7 @@ private:
         {
           ngb_indices = indices;
           ngb_indices[0] = ngb_indices[0] - 1;
-          offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
+          offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(ngb_indices);
           adj.push_back(offset+nx+ny);
         } //Fz(i-1,j,k)
         
@@ -906,7 +906,7 @@ private:
         {
           ngb_indices = indices;
           ngb_indices[2] = ngb_indices[2] - 1;
-          offset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
+          offset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(ngb_indices);
           adj.push_back(offset);
         }//Fx(i,j,k-1)
       }
@@ -938,7 +938,7 @@ private:
         {
           ngb_indices = indices;
           ngb_indices[1] = ngb_indices[1] - 1;
-          offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(indices);
+          offset = ms_.index_spaces[N][TD+4].template get_offset_from_indices(ngb_indices);
           adj.push_back(offset+nx+ny);
         } //Fz(i,j-1,k)
         
@@ -947,7 +947,7 @@ private:
         {
           ngb_indices = indices;
           ngb_indices[2] = ngb_indices[2] - 1;
-          offset = ms_.index_spaces[N][TD+3].template get_offset_from_indices(indices);
+          offset = ms_.index_spaces[N][TD+3].template get_offset_from_indices(ngb_indices);
           adj.push_back(offset+nx);
         }//Fy(i,j,k-1) 
       } 
@@ -977,16 +977,16 @@ private:
         {
           ngb_indices = indices;
           ngb_indices[0] = ngb_indices[0] - 1;
-          offset = ms_.index_spaces[N][TD+3].template get_offset_from_indices(indices);
+          offset = ms_.index_spaces[N][TD+3].template get_offset_from_indices(ngb_indices);
           adj.push_back(offset+nx);
         }//Fy(i-1,j,k)
       
-        if (indices[0] <= (ms_.index_spaces[N][TD+2].template max<1>()) &&
-            indices[1] >= (ms_.index_spaces[N][TD+2].template min<2>()+1) )
+        if (indices[0] <= (ms_.index_spaces[N][TD+2].template max<0>()) &&
+            indices[1] >= (ms_.index_spaces[N][TD+2].template min<1>()+1) )
         {
           ngb_indices = indices;
           ngb_indices[1] = ngb_indices[1] - 1;
-          offset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(indices);
+          offset = ms_.index_spaces[N][TD+2].template get_offset_from_indices(ngb_indices);
           adj.push_back(offset);
         } //Fx(i,j-1,k)  
       }
@@ -1548,7 +1548,7 @@ private:
               index = 5; 
           else if ((ent < (ms_.index_spaces[dom][dim+4].template size())+
                   (ms_.index_spaces[dom][dim+3].template size())+
-                  (ms_.index_spaces[dom+2][dim].template size())) && 
+                  (ms_.index_spaces[dom][dim+2].template size())) && 
                   (ent >= (ms_.index_spaces[dom][dim+3].template size())+
                   (ms_.index_spaces[dom][dim+2].template size()))) 
              index = 6;

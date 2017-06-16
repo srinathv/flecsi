@@ -138,7 +138,7 @@ public:
     size_t rem = offset, value;
 
 
-    std::cout<<"entity = "<<offset<<std::endl;
+    //std::cout<<"entity = "<<offset<<std::endl;
 
     for (int i=0; i<dim_; ++i)
     {
@@ -152,7 +152,7 @@ public:
       id[dim_-i-1] = value;
       rem -= value*factor;
       
-      std::cout<<"factor ="<<factor<<", value = "<<value<<", rem = "<<rem<<std::endl;
+      //std::cout<<"factor ="<<factor<<", value = "<<value<<", rem = "<<rem<<std::endl;
     }
  
    return id;
