@@ -4,6 +4,7 @@
 #------------------------------------------------------------------------------#
 import sys
 import os
+import subprocess
 
 from flecsit.services.analysis_driver.cmakelist import *
 
@@ -94,7 +95,22 @@ def execute(verbose, project_name, build):
     fd.write(source_output[1:-1])
     fd.close()    
 
+    os.chdir(build_dir)
+    
+    command1 = 'cmake ..'
+    
+    subprocess.call(command1.split())
+    
+    
+    # get the location of the llvm install
+    llvm_includes = subprocess.check_output(('llvm-config --includedir').split()).rstrip("\r\n") + '/c++/v1'
 # execute
+    
+    command = 'blend -extra-arg-before=\"-w\" -extra-arg-before=\"'+ llvm_includes + '\"' + ' ../' + project_name + '.cc'
+    
+    print command
+    
+    subprocess.call(command.split())
 
 #------------------------------------------------------------------------------#
 # Formatting options for vim.
