@@ -125,13 +125,8 @@ public:
 
         for (size_t j = 0; j < meshdim_; ++j)
             ubnds.push_back(MT::upper_bounds[j] - vec[j]);
-            
-       // for (int k=0; k<ubnds.size(); k++)
-       //   std::cout<<"ubnds["<<k<<"] = "<<ubnds[k]<<std::endl;    
       
         ms_.index_spaces[0][i].init({MT::lower_bounds.begin(), MT::lower_bounds.end()}, ubnds);
-        
-        std::cout<<"IS-size = "<<ms_.index_spaces[0][i].template size()<<std::endl;
       }
 }
 

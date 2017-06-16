@@ -66,16 +66,6 @@ public:
     dim_ = lbnds.size();  
     lower_bnds_ = lbnds;
     upper_bnds_ = ubnds;
-    
-    std::cout<<std::endl;
-    for (size_t b=0; b<lower_bnds_.size();++b){
-      std::cout<<"lower_bnds["<<b<<"]="<<lower_bnds_[b]<<std::endl;
-    }
-    std::cout<<std::endl;
-    for (size_t b=0; b<upper_bnds_.size();++b){
-      std::cout<<"upper_bnds["<<b<<"]="<<upper_bnds_[b]<<std::endl;
-    }
-    
    }
 
   //default constructor
@@ -137,13 +127,9 @@ public:
     size_t factor;
     size_t rem = offset, value;
 
-
-    //std::cout<<"entity = "<<offset<<std::endl;
-
     for (int i=0; i<dim_; ++i)
     {
       factor = 1; 
-      //for (int j=i; j<dim_-1; ++j)
       for (int j=0; j<dim_-i-1; ++j)
       {
        factor *= upper_bnds_[j]-lower_bnds_[j] + 1; 
@@ -151,8 +137,6 @@ public:
       value = rem/factor;
       id[dim_-i-1] = value;
       rem -= value*factor;
-      
-      //std::cout<<"factor ="<<factor<<", value = "<<value<<", rem = "<<rem<<std::endl;
     }
  
    return id;
