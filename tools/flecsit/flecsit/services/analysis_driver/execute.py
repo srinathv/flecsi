@@ -6,6 +6,8 @@ import sys
 import os
 import subprocess
 
+from subprocess import call
+
 from flecsit.services.analysis_driver.cmakelist import *
 
 def dir_exists(path):
@@ -106,11 +108,15 @@ def execute(verbose, project_name, build):
     llvm_includes = subprocess.check_output(('llvm-config --includedir').split()).rstrip("\r\n") + '/c++/v1'
 # execute
     
-    command = 'blend -extra-arg-before=\"-w\" -extra-arg-before=\"'+ llvm_includes + '\"' + ' ../' + project_name + '.cc'
+    command = 'CC=gcc blend -extra-arg-before=\"-I' + \
+               llvm_includes + '\" ' + \
+               '-extra-arg-before=\"-I' + flecsi_install + '/include\" ' + \
+               '-extra-arg-before=\"-w\" ' +\
+               ' ../' + project_name + '.cc'
     
     print command
     
-    subprocess.call(command.split())
+    subprocess.call(command,shell=True)
 
 #------------------------------------------------------------------------------#
 # Formatting options for vim.
