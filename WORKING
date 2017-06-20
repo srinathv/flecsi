@@ -5,3 +5,5 @@
 - Update copyrights with standard header.
 
 - Check compile modes with each runtime for merge.
+
+- Make std::size_t consistent across project.
