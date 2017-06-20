@@ -73,6 +73,10 @@ TEST(structured, simple){
    CINCH_CAPTURE() << "  -- indices "<< endl; 
    for (auto idv : mesh->get_indices<0>(vertex))
     CINCH_CAPTURE() << "  ---- " <<idv << endl; 
+   auto id = mesh->get_indices<0>(vertex);
+   auto offset = mesh->get_offset<0>(id); 
+   CINCH_CAPTURE() << "  ---- offset " <<offset<< endl; 
+   ASSERT_EQ(vertex,offset); 
 
    //V-->V
    CINCH_CAPTURE() << "  -- stencil [1 0] " <<mesh->entities<0,0,1,0>(vertex) << endl;
@@ -100,6 +104,11 @@ TEST(structured, simple){
    CINCH_CAPTURE() << "  -- indices "<< endl; 
    for (auto idv : mesh->get_indices<1>(edgex))
     CINCH_CAPTURE() << "  ---- " <<idv << endl; 
+   auto id = mesh->get_indices<1>(edgex); 
+   auto offset = mesh->get_offset<1>(id); 
+   CINCH_CAPTURE() << "  ---- offset " <<offset<< endl; 
+   ASSERT_EQ(edgex,offset); 
+    
 
    //E-->E
    CINCH_CAPTURE() << "  -- stencil [1 0] " <<mesh->entities<1,0,1,0>(edgex) << endl;
@@ -127,6 +136,11 @@ TEST(structured, simple){
    CINCH_CAPTURE() << "  -- indices "<< endl; 
    for (auto idv : mesh->get_indices<2>(edgey))
     CINCH_CAPTURE() << "  ---- " <<idv << endl; 
+   auto id = mesh->get_indices<2>(edgey); 
+   auto offset = mesh->get_offset<2>(id); 
+   CINCH_CAPTURE() << "  ---- offset " <<offset<< endl; 
+   ASSERT_EQ(edgey,offset); 
+    
   
    //E-->E
    CINCH_CAPTURE() << "  -- stencil [1 0] " <<mesh->entities<1,0,1,0>(edgey+nex) << endl;
@@ -154,6 +168,11 @@ TEST(structured, simple){
    CINCH_CAPTURE() << "  -- indices "<< endl; 
    for (auto idv : mesh->get_indices<3>(face))
     CINCH_CAPTURE() << "  ---- " <<idv << endl; 
+   auto id = mesh->get_indices<3>(face); 
+   auto offset = mesh->get_offset<3>(id); 
+   CINCH_CAPTURE() << "  ---- offset " <<offset<< endl; 
+   ASSERT_EQ(face,offset); 
+    
   
    //F-->F
    CINCH_CAPTURE() << "  -- stencil [1 0] " <<mesh->entities<2,0,1,0>(face) << endl;
@@ -174,6 +193,7 @@ TEST(structured, simple){
   }
   
 
-  CINCH_WRITE("structured.blessed");
+  //CINCH_WRITE("structured.blessed");
+  ASSERT_TRUE(CINCH_EQUAL_BLESSED("structured.blessed"));
 
 } // TEST

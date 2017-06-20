@@ -6,8 +6,7 @@ using namespace std;
 using namespace flecsi;
 using namespace topology;
 
-
-class Vertex : public structured_mesh_entity_t<0, 1>{
+class Vertex: public structured_mesh_entity_t<0,1>{
 public:
   Vertex(){}
 
@@ -45,7 +44,8 @@ using TestMesh = structured_mesh_topology_t<TestMesh3dType>;
 
 TEST(structured3d, simple){
 
-  auto mesh = new TestMesh; 
+  auto mesh = new TestMesh;
+ 
   size_t nv, nex, ney, nez, nfx, nfy, nfz, nc;
   id_vector_t adj;
 
@@ -55,6 +55,7 @@ TEST(structured3d, simple){
   CINCH_CAPTURE() << "3D Logically structured mesh with bounds: [" <<lbnd[0]<<
   ", "<<lbnd[1]<<", "<<lbnd[2]<<"] - ["<<ubnd[0]<<", "<<ubnd[1]<<", "<<ubnd[2]<<"] \n"<< endl;
 
+  
   nv  = mesh->num_entities(0,0);
   nex = mesh->num_entities(1,0);
   ney = mesh->num_entities(2,0);
@@ -82,7 +83,9 @@ TEST(structured3d, simple){
    for (auto idv : mesh->get_indices<0>(vertex))
     CINCH_CAPTURE() << "  ---- " <<idv << endl;
    auto id = mesh->get_indices<0>(vertex); 
-   CINCH_CAPTURE() << "  ---- offset " <<mesh->get_offset<0>(id) << endl; 
+   auto offset = mesh->get_offset<0>(id);
+   CINCH_CAPTURE() << "  ---- offset " <<offset<< endl;
+   ASSERT_EQ(vertex,offset);   
 
    //V-->V
    CINCH_CAPTURE() << "  -- stencil [ 1  0  0] " <<mesh->entities< 0, 0, 1, 0, 0 >(vertex) << endl;
@@ -119,6 +122,10 @@ TEST(structured3d, simple){
    CINCH_CAPTURE() << "  -- indices "<< endl; 
    for (auto idv : mesh->get_indices<1>(edgex))
     CINCH_CAPTURE() << "  ---- " <<idv << endl; 
+   auto id = mesh->get_indices<1>(edgex); 
+   auto offset = mesh->get_offset<1>(id);
+   CINCH_CAPTURE() << "  ---- offset " <<offset<< endl;
+   ASSERT_EQ(edgex,offset);   
 
    //E-->E
    CINCH_CAPTURE() << "  -- stencil [ 1  0  0] " <<mesh->entities< 1, 0, 1, 0, 0 >(edgex) << endl;
@@ -154,6 +161,10 @@ TEST(structured3d, simple){
    CINCH_CAPTURE() << "  -- indices "<< endl; 
    for (auto idv : mesh->get_indices<2>(edgey))
     CINCH_CAPTURE() << "  ---- " <<idv << endl; 
+   auto id = mesh->get_indices<2>(edgey); 
+   auto offset = mesh->get_offset<2>(id);
+   CINCH_CAPTURE() << "  ---- offset " <<offset<< endl;
+   ASSERT_EQ(edgey,offset);   
   
    //E-->E
    CINCH_CAPTURE() << "  -- stencil [ 1  0  0] " <<mesh->entities< 1, 0, 1, 0, 0 >(edgey+nex) << endl;
@@ -189,6 +200,10 @@ TEST(structured3d, simple){
    CINCH_CAPTURE() << "  -- indices "<< endl; 
    for (auto idv : mesh->get_indices<3>(edgez))
     CINCH_CAPTURE() << "  ---- " <<idv << endl; 
+   auto id = mesh->get_indices<3>(edgez); 
+   auto offset = mesh->get_offset<3>(id);
+   CINCH_CAPTURE() << "  ---- offset " <<offset<< endl;
+   ASSERT_EQ(edgez,offset);   
   
    //E-->E
    CINCH_CAPTURE() << "  -- stencil [ 1  0  0] " <<mesh->entities< 1, 0, 1, 0, 0 >(edgez+nex+ney) << endl;
@@ -223,6 +238,10 @@ TEST(structured3d, simple){
    CINCH_CAPTURE() << "  -- indices "<< endl; 
    for (auto idv : mesh->get_indices<4>(facex))
     CINCH_CAPTURE() << "  ---- " <<idv << endl; 
+   auto id = mesh->get_indices<4>(facex); 
+   auto offset = mesh->get_offset<4>(id);
+   CINCH_CAPTURE() << "  ---- offset " <<offset<< endl;
+   ASSERT_EQ(facex,offset);   
   
    //F-->F
    CINCH_CAPTURE() << "  -- stencil [ 1  0  0] " <<mesh->entities< 2, 0, 1, 0, 0 >(facex) << endl;
@@ -257,6 +276,10 @@ TEST(structured3d, simple){
    CINCH_CAPTURE() << "  -- indices "<< endl; 
    for (auto idv : mesh->get_indices<5>(facey))
     CINCH_CAPTURE() << "  ---- " <<idv << endl; 
+   auto id = mesh->get_indices<5>(facey); 
+   auto offset = mesh->get_offset<5>(id);
+   CINCH_CAPTURE() << "  ---- offset " <<offset<< endl;
+   ASSERT_EQ(facey,offset);   
   
    //F-->F
    CINCH_CAPTURE() << "  -- stencil [ 1  0  0] " <<mesh->entities< 2, 0, 1, 0, 0 >(facey+nfx) << endl;
@@ -294,6 +317,10 @@ TEST(structured3d, simple){
    CINCH_CAPTURE() << "  -- indices "<< endl; 
    for (auto idv : mesh->get_indices<6>(facez))
     CINCH_CAPTURE() << "  ---- " <<idv << endl; 
+   auto id = mesh->get_indices<6>(facez); 
+   auto offset = mesh->get_offset<6>(id);
+   CINCH_CAPTURE() << "  ---- offset " <<offset<< endl;
+   ASSERT_EQ(facez,offset);   
   
    //F-->F
    CINCH_CAPTURE() << "  -- stencil [ 1  0  0] " <<mesh->entities< 2, 0, 1, 0, 0 >(facez+nfx+nfy) << endl;
@@ -330,6 +357,10 @@ TEST(structured3d, simple){
    CINCH_CAPTURE() << "  -- indices "<< endl; 
    for (auto idv : mesh->get_indices<7>(cell))
     CINCH_CAPTURE() << "  ---- " <<idv << endl; 
+   auto id = mesh->get_indices<7>(cell); 
+   auto offset = mesh->get_offset<7>(id);
+   CINCH_CAPTURE() << "  ---- offset " <<offset<< endl;
+   ASSERT_EQ(cell,offset);   
   
    //C-->C
    CINCH_CAPTURE() << "  -- stencil [ 1  0  0] " <<mesh->entities< 3, 0, 1, 0, 0 >(cell) << endl;
@@ -358,6 +389,7 @@ TEST(structured3d, simple){
   }
   
 
-  CINCH_WRITE("structured3d.blessed");
+  ASSERT_TRUE(CINCH_EQUAL_BLESSED("structured3d.blessed"));
+  //CINCH_WRITE("structured3d.blessed");
 
 } // TEST

@@ -112,6 +112,8 @@ cinch_add_unit(gravity-state
 cinch_add_unit(structured
   SOURCES
     test/structured.cc
+  INPUTS
+    test/structured.blessed
   LIBRARIES
     flecsi
     ${CINCH_RUNTIME_LIBRARIES}
@@ -120,6 +122,16 @@ cinch_add_unit(structured
 cinch_add_unit(structured3d
   SOURCES
     test/structured3d.cc
+  INPUTS
+    test/structured3d.blessed
+  LIBRARIES
+    flecsi
+    ${CINCH_RUNTIME_LIBRARIES}
+)
+
+cinch_add_unit(structured3dtime
+  SOURCES
+    test/structured3dtime.cc
   LIBRARIES
     flecsi
     ${CINCH_RUNTIME_LIBRARIES}
