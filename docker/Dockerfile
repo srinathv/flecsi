@@ -61,11 +61,13 @@ RUN if [ ${COVERAGE} ]; then \
     fi
 RUN make test ARGS="-V"
 RUN export CLOG_ENABLE_STDLOG=1
-RUN cd test/data
-RUN mpirun -n 2 ./client_registration
-RUN cd ../../
+RUN ls
+RUN pwd
 RUN cd test/execution
 RUN mpirun -n 2 ./reduction
+RUN cd ../../
+RUN cd test/data
+RUN mpirun -n 2 ./client_registration
 RUN cd ../../
 RUN make install DESTDIR=${PWD}/install && rm -rf ${PWD}/install
 RUN cd .. && if [ ${COVERAGE} ]; then \
