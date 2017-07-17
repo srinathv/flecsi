@@ -42,7 +42,7 @@ RUN cmake \
           -DFLECSI_RUNTIME_MODEL=$RUNTIME \
           ${MINIMAL:+-DCMAKE_DISABLE_FIND_PACKAGE_METIS=ON} \
           -DENABLE_UNIT_TESTS=ON \
-          -DCLOG_STRIP_LEVEL=3 \
+          -DCLOG_STRIP_LEVEL=0 \
           -DCLOG_DEBUG=OFF \
           -DENABLE_PARMETIS=ON \
           -DENABLE_COLORING=ON \
@@ -60,6 +60,13 @@ RUN if [ ${COVERAGE} ]; then \
       doxy-coverage --threshold 24 doc/doxygen/xml/; \
     fi
 RUN make test ARGS="-V"
+RUN export CLOG_ENABLE_STDLOG=1
+RUN cd test/data
+RUN mpirun -n 2 ./client_registration
+RUN cd ../../
+RUN cd test/execution
+RUN mpirun -n 2 ./reduction
+RUN cd ../../
 RUN make install DESTDIR=${PWD}/install && rm -rf ${PWD}/install
 RUN cd .. && if [ ${COVERAGE} ]; then \
   if [ ${CC} = clang ]; then \
