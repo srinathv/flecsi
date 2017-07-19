@@ -399,7 +399,7 @@ runtime_driver(
 std::cout <<"IRINA DEBUG after the spmd task launch" <<std::endl;
   // Finish up Legion runtime and fall back out to MPI.
 
-  //FIXME runtime->destroy_dynamic_collective(ctx, max_reduction);
+  runtime->destroy_dynamic_collective(ctx, max_reduction);
 
   for(auto& itr_idx : phase_barriers_map) {
     const size_t idx = itr_idx.first;
