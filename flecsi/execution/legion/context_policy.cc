@@ -100,7 +100,7 @@ legion_context_policy_t::initialize(
      clog_tag_guard(context);
       clog(info) << "before Wait_for_shutdown "<<rank << std::endl;
      }
-    Legion::Runtime::wait_for_shutdown();
+  //  Legion::Runtime::wait_for_shutdown();
   } // if
 
   return 0;

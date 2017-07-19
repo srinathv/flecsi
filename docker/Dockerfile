@@ -50,18 +50,9 @@ RUN cmake \
           -DENABLE_DOCUMENTATION=ON \
           ${COVERAGE:+-DENABLE_COVERAGE_BUILD=ON} ..
 
-RUN ${SONARQUBE:+build-wrapper-linux-x86-64 --out-dir bw-output} make VERBOSE=1 -j2
+RUN ${SONARQUBE:+build-wrapper-linux-x86-64 --out-dir bw-output} make client_registration VERBOSE=1 -j2
 RUN ccache -s
-RUN make doxygen
-RUN if [ ${COVERAGE} ]; then \
-      python -m coverxygen --xml-dir doc/doxygen/xml/ --src-dir .. --output doxygen.coverage.info; \
-      wget -O codecov.sh https://codecov.io/bash; \
-      bash codecov.sh -X gcov -f doxygen.coverage.info -F documentation; \
-      doxy-coverage --threshold 24 doc/doxygen/xml/; \
-    fi
-RUN make test ARGS="-V"
 RUN export CLOG_ENABLE_STDLOG=1
-RUN ls
 RUN export CLOG_ENABLE_STDLOG=1 ; mpiexec -n 1 ./test/data/client_registration
 RUN export CLOG_ENABLE_STDLOG=1 ; mpiexec -n 2 ./test/data/client_registration
 RUN export CLOG_ENABLE_STDLOG=1 ; mpiexec -n 2 ./test/execution/reduction
