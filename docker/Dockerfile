@@ -62,9 +62,9 @@ RUN if [ ${COVERAGE} ]; then \
 RUN make test ARGS="-V"
 RUN export CLOG_ENABLE_STDLOG=1
 RUN ls
-RUN pwd
+RUN export CLOG_ENABLE_STDLOG=1 ; mpiexec -n 1 ./test/data/client_registration
+RUN export CLOG_ENABLE_STDLOG=1 ; mpiexec -n 2 ./test/data/client_registration
 RUN export CLOG_ENABLE_STDLOG=1 ; mpiexec -n 2 ./test/execution/reduction
-RUN export CLOG_ENABLE_STDLOG=1 ; mpirun -n 2 ./test/data/client_registration
 RUN make install DESTDIR=${PWD}/install && rm -rf ${PWD}/install
 RUN cd .. && if [ ${COVERAGE} ]; then \
   if [ ${CC} = clang ]; then \
