@@ -86,10 +86,20 @@ legion_context_policy_t::initialize(
     handoff_to_legion();
     wait_on_legion();
   }
+
+  {
+  clog_tag_guard(context);
+  clog(info) << "In context initialize, before Wait_for_shutdown "<<
+   rank << std::endl;
+  }
   
   int version, subversion;
   MPI_Get_version(&version, &subversion);
   if(version==3 && subversion>0) {
+    {
+     clog_tag_guard(context);
+      clog(info) << "before Wait_for_shutdown "<<rank << std::endl;
+     }
     Legion::Runtime::wait_for_shutdown();
   } // if
 

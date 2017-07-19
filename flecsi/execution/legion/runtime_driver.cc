@@ -396,6 +396,7 @@ runtime_driver(
   auto future = runtime->execute_must_epoch(ctx, must_epoch_launcher);
   future.wait_all_results();
 
+std::cout <<"IRINA DEBUG after the spmd task launch" <<std::endl;
   // Finish up Legion runtime and fall back out to MPI.
 
   //FIXME runtime->destroy_dynamic_collective(ctx, max_reduction);
@@ -415,7 +416,9 @@ runtime_driver(
   }
   phase_barriers_map.clear();
 
+std::cout <<"IRINA DEBUG after the destruction of PBs" <<std::endl;
   context_.unset_call_mpi(ctx, runtime);
+std::cout <<"IRINA DEBUG after the unset call to MPI" <<std::endl;
   context_.handoff_to_mpi(ctx, runtime);
 } // runtime_driver
 
