@@ -58,6 +58,7 @@ RUN cmake \
 RUN ${SONARQUBE:+build-wrapper-linux-x86-64 --out-dir bw-output} make client_registration VERBOSE=1 -j2
 RUN ccache -s
 RUN export CLOG_ENABLE_STDLOG=1
+RUN gdb -ex 'run' -ex 'bt' ./test/data/client_registration 
 RUN export CLOG_ENABLE_STDLOG=1 ; mpiexec -n 1 ./test/data/client_registration
 RUN export CLOG_ENABLE_STDLOG=1 ; mpiexec -n 2 ./test/data/client_registration
 RUN export CLOG_ENABLE_STDLOG=1 ; mpiexec -n 2 ./test/execution/reduction
