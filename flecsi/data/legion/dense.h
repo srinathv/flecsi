@@ -110,11 +110,11 @@ struct dense_handle_t : public data_handle__<T, EP, SP, GP>
 
     // ghost is never mapped with write permissions
 
-    if(base_t::master && base_t::combined_data){
 #ifndef MAPPER_COMPACTION
+    if(base_t::master && base_t::combined_data){
       delete[] base_t::combined_data;
-#endif
     }
+#endif
   }
   
   ///

@@ -92,6 +92,16 @@ public:
       runtime_->destroy_field_space(ctx_, is.field_space);
       runtime_->destroy_logical_region(ctx_, is.logical_region);
     }
+
+    for(auto& itr : global_index_space_map_){
+      index_space_t& is = itr.second;
+
+      runtime_->destroy_index_partition(ctx_, is.index_partition);
+      runtime_->destroy_index_space(ctx_, is.index_space);
+      runtime_->destroy_field_space(ctx_, is.field_space);
+      runtime_->destroy_logical_region(ctx_, is.logical_region);
+    }
+
   }
 
   void
@@ -102,6 +112,11 @@ public:
     for(auto& idx_space : indexed_coloring_info_map){
       add_index_space(idx_space.first, idx_space.second);
     }
+
+    for(auto& idx_space : indexed_coloring_info_map){
+      add_global_index_space(idx_space.first, idx_space.second);
+    }
+
   }
 
   void
@@ -155,6 +170,55 @@ public:
 
     index_space_map_[index_space_id] = std::move(is);
   }
+
+  void
+  add_global_index_space(
+    size_t index_space_id,
+    const coloring_info_map_t& coloring_info_map
+  )
+  { 
+    using namespace std;
+    
+    using namespace Legion;
+    using namespace LegionRuntime;
+    using namespace Arrays;
+    
+    using namespace execution;
+    
+    context_t & context = context_t::instance();
+    
+    index_space_t is; 
+    is.index_space_id = index_space_id;
+    
+    // Create global IndexSpace
+    index_spaces_.insert(index_space_id);
+    
+    // Determine max size of a color partition
+    is.total_num_entities = 0;
+    for(auto color_idx : coloring_info_map){
+      
+      is.total_num_entities += color_idx.second.exclusive 
+					+ color_idx.second.shared;
+    } // for color_idx
+    
+    clog(trace) << "total_num_entities " << is.total_num_entities << std::endl;
+    
+    // Create expanded index space
+    Rect<1> bounds = 
+      Rect<1>(Point<1>::ZEROES(),  is.total_num_entities);
+    
+    Domain dom(Domain::from_rect<1>(bounds));
+    
+    is.index_space = runtime_->create_index_space(ctx_, dom);
+    attach_name(is, is.index_space, "global index space");
+    
+    // Read user + FleCSI registered field spaces
+    is.field_space = runtime_->create_field_space(ctx_);
+    
+    attach_name(is, is.field_space, "global field space");
+    
+    global_index_space_map_[index_space_id] = std::move(is);
+  }//add_global_index_space 
 
   void
   add_adjacency(
@@ -281,10 +345,12 @@ public:
         }
       }
 
-      is.logical_region = runtime_->create_logical_region(ctx_, is.index_space, is.field_space);
+      is.logical_region = runtime_->create_logical_region(ctx_,
+        is.index_space, is.field_space);
       attach_name(is, is.logical_region, "expanded logical region");
 
-      // Partition expanded IndexSpace color-wise & create associated PhaseBarriers
+      // Partition expanded IndexSpace color-wise & create associated
+      //  PhaseBarriers
       DomainColoring color_partitioning;
       for(int color = 0; color < num_colors_; color++){
         auto citr = coloring_info_map.find(color);
@@ -302,7 +368,36 @@ public:
       is.index_partition = runtime_->create_index_partition(ctx_,
         is.index_space, color_domain_, color_partitioning, true /*disjoint*/);
       attach_name(is, is.index_partition, "color partitioning");
-    }
+    }//end for
+
+    for(auto& itr : global_index_space_map_){
+      index_space_t& is = itr.second;
+
+      auto citr = indexed_coloring_info_map.find(is.index_space_id);
+      clog_assert(citr != indexed_coloring_info_map.end(),
+        "invalid index space");
+      const coloring_info_map_t& coloring_info_map = citr->second;
+
+      FieldAllocator allocator =
+        runtime_->create_field_allocator(ctx_, is.field_space);
+
+//      auto ghost_owner_pos_fid = FieldID(internal_field::ghost_owner_pos);
+
+//      allocator.allocate_field(sizeof(Point<2>), ghost_owner_pos_fid);
+
+      using field_info_t = context_t::field_info_t;
+
+      for(const field_info_t& fi : context.registered_fields()){
+        if(fi.index_space == is.index_space_id){
+          allocator.allocate_field(fi.size, fi.fid);
+        }
+      }
+
+      is.logical_region = runtime_->create_logical_region(ctx_,
+          is.index_space, is.field_space);
+      attach_name(is, is.logical_region, "global logical region");
+    }//end for
+
   }
 
   const index_space_t&
@@ -315,6 +410,18 @@ public:
     clog_assert(itr != index_space_map_.end(), "invalid index space");
     return itr->second;
   }
+
+  const index_space_t&
+  gloabal_index_space(
+    size_t index_space_id
+  )
+  const
+  {
+    auto itr = global_index_space_map_.find(index_space_id);
+    clog_assert(itr != global_index_space_map_.end(), "invalid index space");
+    return itr->second;
+  }
+
 
   const std::set<size_t>&
   index_spaces()
@@ -481,6 +588,8 @@ private:
   std::set<size_t> index_spaces_;
 
   std::unordered_map<size_t, index_space_t> index_space_map_;
+
+  std::unordered_map<size_t, index_space_t> global_index_space_map_;
   
   std::unordered_map<size_t, adjacency_t> adjacency_map_;
 

@@ -121,6 +121,7 @@ runtime_driver(
   data::legion_data_t data(ctx, runtime, num_colors);
 
   data.init_from_coloring_info_map(coloring_info);
+//Irina TOFIX add global index space
 
   for(auto& itr : context_.adjacency_info()){
     data.add_adjacency(itr.second);
