@@ -25,10 +25,6 @@ ARG TRAVIS_OS_NAME
 ARG IGNORE_NOCI
 
 
-RUN su
-RUN echo "core" > /proc/sys/kernel/core_pattern
-RUN exit
-
 RUN rm -rf /home/flecsi/.ccache
 COPY flecsi /home/flecsi/flecsi
 COPY ccache/ /home/flecsi/.ccache
