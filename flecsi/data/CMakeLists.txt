@@ -21,6 +21,7 @@ set(data_HEADERS
   common/data_hash.h
   common/data_types.h
   common/privilege.h
+  common/registration_wrapper.h
   client.h
   data_client.h
   data_client_handle.h
@@ -42,6 +43,8 @@ set(data_SOURCES
   data_client.cc
 )
 
+set(DRIVER_INITIALIZATION ../execution/driver_initialization.cc)
+
 #------------------------------------------------------------------------------#
 # Runtime-specific files.
 #
@@ -58,7 +61,6 @@ if(FLECSI_RUNTIME_MODEL STREQUAL "serial")
     serial/dense.h
     serial/global.h
     serial/meta_data.h
-    serial/registration_wrapper.h
     serial/scoped.h
     serial/sparse.h
     serial/storage_policy.h
@@ -79,17 +81,11 @@ elseif(FLECSI_RUNTIME_MODEL STREQUAL "legion")
     legion/dpd.h
     legion/global.h
     legion/legion_data.h
-    legion/registration_wrapper.h
     legion/scoped.h
     legion/sparse.h
     legion/storage_policy.h
     legion/tuple.h
   )
-
-#  set(data_SOURCES
-#    ${data_SOURCES}
-#    legion/dpd.cc
-#  )
 
   set(UNIT_POLICY LEGION)
   set(RUNTIME_DRIVER ../execution/legion/runtime_driver.cc)
@@ -102,7 +98,6 @@ elseif(FLECSI_RUNTIME_MODEL STREQUAL "mpi")
     mpi/data_handle_policy.h
     mpi/data_policy.h
     mpi/dense.h
-    mpi/registration_wrapper.h
     mpi/storage_policy.h
   )
 
@@ -110,8 +105,8 @@ elseif(FLECSI_RUNTIME_MODEL STREQUAL "mpi")
     ${data_SOURCES}
   )
 
-  set(UNIT_POLICY LEGION)
-  set(RUNTIME_DRIVER mpi/runtime_driver.cc)
+  set(UNIT_POLICY MPI)
+  set(RUNTIME_DRIVER ../execution/mpi/runtime_driver.cc)
 
 endif()
 
@@ -220,30 +215,26 @@ set(data_SOURCES
 
 #endif()
 
- if(FLECSI_RUNTIME_MODEL STREQUAL "legion")
+if(ENABLE_COLORING AND ENABLE_PARMETIS)
 
-   if(ENABLE_COLORING AND ENABLE_PARMETIS)
+  cinch_add_unit(client_registration
+    SOURCES
+      test/client_registration.cc
+      data_client.cc
+      ${DRIVER_INITIALIZATION}
+      ${RUNTIME_DRIVER}
+    DEFINES
+      -DCINCH_OVERRIDE_DEFAULT_INITIALIZATION_DRIVER
+    LIBRARIES
+      flecsi
+      ${CINCH_RUNTIME_LIBRARIES}
+    POLICY ${UNIT_POLICY}
+    THREADS 2
+    NOCI
+    )
 
-     cinch_add_unit(client_registration
-       SOURCES
-         test/client_registration.cc
-         data_client.cc
-         ../execution/driver_initialization.cc
-         ../execution/legion/runtime_driver.cc
-         ../execution/legion/context_policy.cc
-       DEFINES
-         -DCINCH_OVERRIDE_DEFAULT_INITIALIZATION_DRIVER
-       LIBRARIES
-         flecsi
-         ${CINCH_RUNTIME_LIBRARIES}
-       POLICY LEGION
-       THREADS 2
-       NOCI
-     )
+endif()
 
-   endif()
-
- endif()
 
 #----------------------------------------------------------------------------~-#
 # Formatting options for vim.

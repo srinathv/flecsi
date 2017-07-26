@@ -23,8 +23,6 @@ env:
     - DISTRO=fedora_mpich RUNTIME=legion DOCKERHUB=true
 #    - DISTRO=fedora_mpich RUNTIME=legion IGNORE_NOCI=true
 #    - DISTRO=fedora_mpich RUNTIME=legion WERROR=yes
-#    - DISTRO=fedora RUNTIME=serial        DOCKERHUB=true
-#    - DISTRO=fedora RUNTIME=serial        WERROR=yes
 #    - DISTRO=fedora RUNTIME=legion COVERAGE=ON
 
 matrix:
@@ -41,7 +39,12 @@ matrix:
       env: DISTRO=fedora_mpich RUNTIME=legion IGNORE_NOCI=true
     - compiler: clang
       env: DISTRO=fedora_mpich RUNTIME=legion IGNORE_NOCI=true
-    
+    - compiler: clang
+      env: DISTRO=ubuntu_mpich RUNTIME=mpi WERROR=yes
+    - compiler: clang
+      env: DISTRO=fedora RUNTIME=mpi WERROR=yes
+    - compiler: clang
+      env: DISTRO=fedora_mpich RUNTIME=mpi WERROR=yes
 
 before_install:
  - git fetch --unshallow && git fetch --tags #for versioning
