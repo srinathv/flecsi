@@ -256,6 +256,7 @@ runtime_driver(
 
     // #2 serialize field info
     size_t num_fields = context_.registered_fields().size();
+
     args_serializers[color].serialize(&num_fields, sizeof(size_t));
     args_serializers[color].serialize(
       &context_.registered_fields()[0], num_fields * sizeof(field_info_t));
@@ -328,16 +329,6 @@ runtime_driver(
       for(const field_info_t& field_info : context_.registered_fields()){
         if(field_info.index_space == idx_space){
           reg_req.add_field(field_info.fid);
-        }
-      }
-
-      for(auto& itr : context_.adjacency_info()){
-        if(itr.first == idx_space){
-          Legion::FieldID adjacency_fid = 
-            context_.adjacency_fid(itr.second.from_index_space,
-              itr.second.to_index_space);
-          
-          reg_req.add_field(adjacency_fid);
         }
       }
 
@@ -563,6 +554,8 @@ spmd_task(
   // Prevent these objects destructors being called until after driver()
   std::map<size_t, std::vector<Legion::LogicalRegion>>
     ghost_owners_lregions;
+  std::map<size_t, Legion::LogicalRegion> entities_lregions;
+  std::map<size_t, Legion::FieldSpace> entities_fspaces;
   std::vector<Legion::IndexPartition> primary_ghost_ips(num_idx_spaces);
   std::vector<Legion::IndexPartition> exclusive_shared_ips(num_idx_spaces);
 
@@ -573,6 +566,41 @@ spmd_task(
 
     ispace_dmap[idx_space].color_region = regions[region_index]
                                                   .get_logical_region();
+    Legion::FieldAllocator allocator = 
+      runtime->create_field_allocator(ctx, entities_fspaces[idx_space]);
+
+    for(auto& mitr : context_.field_info_map()){
+      if(mitr.first.second == idx_space){
+        size_t client_hash = mitr.first.first;
+
+        auto itr = context_.field_info_map().find(
+          {client_hash, idx_space});
+        clog_assert(itr != context_.field_info_map().end(),
+          "invalid from index space");
+
+        auto& fm = itr->second;
+
+        for(auto& fitr : fm){
+          if(fitr.second.key == 
+             utils::hash::client_internal_field_hash(
+             utils::const_string_t("__flecsi_internal_adjacency_offset__").
+             hash(), idx_space)){
+            allocator.allocate_field(sizeof(LegionRuntime::Arrays::Point<2>), fitr.second.fid);
+          }
+          else if(fitr.second.key == 
+            utils::hash::client_internal_field_hash(
+            utils::const_string_t("__flecsi_internal_entity_data__").
+            hash(), idx_space)) {
+            allocator.allocate_field(fitr.second.size, fitr.second.fid);
+          } // if
+        }
+      }
+    }
+
+    entities_lregions[idx_space] = 
+      runtime->create_logical_region(ctx, regions[region_index].get_logical_region().get_index_space(), entities_fspaces[idx_space]);
+    
+    ispace_dmap[idx_space].entity_region = entities_lregions[idx_space];
 
     const std::unordered_map<size_t, flecsi::coloring::coloring_info_t>
       coloring_info_map = context_.coloring_info(idx_space);

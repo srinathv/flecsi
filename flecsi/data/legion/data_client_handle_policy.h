@@ -44,11 +44,12 @@ struct data_client_handle_adjacency
   size_t to_dim;
   size_t num_offsets;
   size_t num_indices;
-  field_id_t index_fid;
   field_id_t offset_fid;
+  field_id_t index_fid;
   Legion::LogicalRegion adj_region;
   Legion::LogicalRegion from_color_region;
   Legion::LogicalRegion from_primary_region;
+  Legion::LogicalRegion entity_region;
   LegionRuntime::Arrays::Point<2> * offsets_buf;
   uint64_t * indices_buf;
 };

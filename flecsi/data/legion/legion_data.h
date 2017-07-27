@@ -299,6 +299,8 @@ public:
         color_partitioning[color] = Domain::from_rect<2>(subrect);
       }
 
+      
+
       is.index_partition = runtime_->create_index_partition(ctx_,
         is.index_space, color_domain_, color_partitioning, true /*disjoint*/);
       attach_name(is, is.index_partition, "color partitioning");

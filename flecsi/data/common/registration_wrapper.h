@@ -68,6 +68,9 @@ struct field_registration_wrapper__
     fi.fid = fid;
     fi.key = key;
 
+    //np(fi.index_space);
+    //np(fi.key);
+
     execution::context_t::instance().register_field_info(fi);
   } // register_callback
 
