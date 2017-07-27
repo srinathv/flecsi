@@ -566,6 +566,7 @@ spmd_task(
 
     ispace_dmap[idx_space].color_region = regions[region_index]
                                                   .get_logical_region();
+    entities_fspaces[idx_space] = runtime->create_field_space(ctx);
     Legion::FieldAllocator allocator = 
       runtime->create_field_allocator(ctx, entities_fspaces[idx_space]);
 
