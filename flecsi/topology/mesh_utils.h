@@ -178,7 +178,8 @@ struct find_index_space__<0, TUPLE, ENTITY> {
 template <
   size_t INDEX,
   typename TUPLE,
-  size_t DIMENSION
+  size_t DIMENSION,
+  size_t DOM
 >
 struct find_index_space_from_dimension__
 {
@@ -199,11 +200,14 @@ struct find_index_space_from_dimension__
     // grab current types
     using TUPLE_ELEMENT = typename std::tuple_element<INDEX - 1, TUPLE>::type;
     using INDEX_SPACE = typename std::tuple_element<0, TUPLE_ELEMENT>::type;
+    using ELEMENT_DOMAIN = typename std::tuple_element<1, TUPLE_ELEMENT>::type;
     using ELEMENT_ENTITY = typename std::tuple_element<2, TUPLE_ELEMENT>::type;
 
     // Check match for dimension and return if matched, recurse otherwise.
-    return DIMENSION == ELEMENT_ENTITY::dimension ? INDEX_SPACE::value :
-      find_index_space_from_dimension__<INDEX - 1, TUPLE, DIMENSION>::find();
+    return DIMENSION == ELEMENT_ENTITY::dimension && 
+      DOM == ELEMENT_DOMAIN::value ? INDEX_SPACE::value :
+      find_index_space_from_dimension__<INDEX - 1, TUPLE, DIMENSION, DOM>
+        ::find();
   } // find
 
 }; // find_index_space_from_dimension__
@@ -212,8 +216,8 @@ struct find_index_space_from_dimension__
 //! End recursion condition.
 //----------------------------------------------------------------------------//
 
-template <typename TUPLE, size_t DIMENSION>
-struct find_index_space_from_dimension__<0, TUPLE, DIMENSION> {
+template <typename TUPLE, size_t DIMENSION, size_t DOM>
+struct find_index_space_from_dimension__<0, TUPLE, DIMENSION, DOM> {
 
   //--------------------------------------------------------------------------//
   //! Search last tuple element.
@@ -223,6 +227,63 @@ struct find_index_space_from_dimension__<0, TUPLE, DIMENSION> {
   constexpr
   size_t
   find()
+  {
+    return 1;
+  } // find
+
+}; // struct find_index_space_from_dimension__
+
+//----------------------------------------------------------------------------//
+//----------------------------------------------------------------------------//
+
+template <
+  size_t INDEX,
+  typename TUPLE
+>
+struct get_index_space_from_dimension__
+{
+  //--------------------------------------------------------------------------//
+  //! Find the index corresponding to an entity type in the connectivities 
+  //! tuple - either from or to
+  //!
+  //! @tparam I The current index in tuple.
+  //! @tparam T The tuple type.
+  //! @tparam E The entity type to find.
+  //--------------------------------------------------------------------------//
+
+  static
+  size_t
+  get(size_t dim, size_t domain)
+  {
+    // grab current types
+    using TUPLE_ELEMENT = typename std::tuple_element<INDEX - 1, TUPLE>::type;
+    using INDEX_SPACE = typename std::tuple_element<0, TUPLE_ELEMENT>::type;
+    using ELEMENT_DOMAIN = typename std::tuple_element<1, TUPLE_ELEMENT>::type;
+    using ELEMENT_ENTITY = typename std::tuple_element<2, TUPLE_ELEMENT>::type;
+
+    // Check match for dimension and return if matched, recurse otherwise.
+    return dim == ELEMENT_ENTITY::dimension && 
+      domain == ELEMENT_DOMAIN::value ? INDEX_SPACE::value :
+      get_index_space_from_dimension__<INDEX - 1, TUPLE>
+        ::get(dim, domain);
+  } // find
+
+}; // find_index_space_from_dimension__
+
+//----------------------------------------------------------------------------//
+//! End recursion condition.
+//----------------------------------------------------------------------------//
+
+template <typename TUPLE>
+struct get_index_space_from_dimension__<0, TUPLE> {
+
+  //--------------------------------------------------------------------------//
+  //! Search last tuple element.
+  //--------------------------------------------------------------------------//
+
+  static
+  size_t
+  get(size_t dim, size_t domain)
   {
     return 1;
   } // find

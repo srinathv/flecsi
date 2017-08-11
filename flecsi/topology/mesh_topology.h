@@ -1313,7 +1313,8 @@ private:
       find_index_space_from_dimension__<
         std::tuple_size<typename MT::entity_types>::value,
         typename MT::entity_types,
-        UsingDimension
+        UsingDimension,
+        Domain
       >::find();
 
     auto & context_ = flecsi::execution::context_t::instance();
@@ -1387,7 +1388,8 @@ private:
           find_index_space_from_dimension__<
             std::tuple_size<typename MT::entity_types>::value,
             typename MT::entity_types,
-            0
+            0,
+            Domain
           >::find();
 
         // Lookup the index space for the entity type being created.
@@ -1395,7 +1397,8 @@ private:
           find_index_space_from_dimension__<
             std::tuple_size<typename MT::entity_types>::value,
             typename MT::entity_types,
-            DimensionToBuild
+            DimensionToBuild,
+            Domain
           >::find();
 
         // Get the map of the vertex ids. This map takes
@@ -1497,7 +1500,8 @@ private:
       find_index_space_from_dimension__<
         std::tuple_size<typename MT::entity_types>::value,
         typename MT::entity_types,
-        TD
+        TD,
+        TM
       >::find();
 
     const auto & context_ = flecsi::execution::context_t::instance();
@@ -1847,7 +1851,6 @@ private:
     static_assert(TD <= MT::num_dimensions, "invalid dimension");
 
     // Helper variables
-    size_t entity_id = 0;
     const size_t _num_cells = num_entities<MT::num_dimensions, FM>();
 
     // Storage for cell connectivity information
@@ -1871,13 +1874,37 @@ private:
 
     using to_entity_type = entity_type<TD, TM>;
 
+    // Lookup the index space for the entity type being created.
+    constexpr size_t cell_index_space =
+      find_index_space_from_dimension__<
+        std::tuple_size<typename MT::entity_types>::value,
+        typename MT::entity_types,
+        MT::num_dimensions,
+        FM
+      >::find();
+
+    // Lookup the index space for the entity type being created.
+    constexpr size_t entity_index_space =
+      find_index_space_from_dimension__<
+        std::tuple_size<typename MT::entity_types>::value,
+        typename MT::entity_types,
+        TD,
+        TM
+      >::find();
+
+    auto & context_ = flecsi::execution::context_t::instance();
+
+    auto& gis_to_cis_cells = context_.gis_to_cis_map(cell_index_space);
+
     // Iterate over cells
-    for (auto c : cells) {
+    //for (auto c : cells) {
+    for(auto& citr : gis_to_cis_cells){
+      size_t c = citr.second;
       // Map used to ensure unique entity creation
       id_vector_map_t entity_ids_map;
 
       // Get a cell object.
-      auto cell = static_cast<entity_type<MT::num_dimensions, M0> *>(c);
+      auto cell = static_cast<entity_type<MT::num_dimensions, M0> *>(cells[c]);
       id_t cell_id = cell->template global_id<FM>();
 
       domain_connectivity<MT::num_dimensions> & primal_conn =
@@ -1906,6 +1933,38 @@ private:
 
       for (size_t i = 0; i < n; ++i) {
         size_t m = sv[i];
+
+        std::vector<size_t> entities_mis;
+        entities_mis.reserve(m);
+
+        // Push the MIS vertex ids onto a vector to search for the
+        // associated entity.
+        for(size_t j = 0; j < m; ++j){
+          const id_t& id = entity_ids[pos + j];
+
+          size_t index_space =
+            get_index_space_from_dimension__<
+              std::tuple_size<typename MT::entity_types>::value,
+              typename MT::entity_types
+            >::get(id.dimension(), id.domain());
+
+          auto& cis_to_mis = context_.index_map(index_space);
+          entities_mis.push_back(cis_to_mis[id.entity()]);
+        } // for
+
+        // Get the reverse map of the intermediate ids. This map takes
+        // vertices defining an entity to the entity id in MIS.
+        auto & reverse_intermediate_map =
+          context_.reverse_intermediate_map(TD, TM);
+
+        // Lookup the MIS id of the entity.
+        const auto entity_id_mis = reverse_intermediate_map.at(entities_mis);
+
+        auto & entity_index_map = 
+          context_.reverse_index_map(entity_index_space);
+
+        // Lookup the CIS id of the entity.
+        const auto entity_id = entity_index_map.at(entity_id_mis);
 
         id_t create_id = id_t::make<TD, TM>(entity_id, cell_id.partition());
 
@@ -1942,8 +2001,6 @@ private:
         }
 
         auto ent = MT::template create_entity<TM, TD>(this, num_vertices);
-
-        ++entity_id;
 
         pos += m;
       } // for
