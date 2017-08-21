@@ -18,7 +18,9 @@
 namespace flecsi {
 namespace topology {
 
-template<typename T>
+template<
+  typename T
+>
 using topology_storage__ = array_buffer__<T>;
 
 class offset_storage_{
@@ -27,14 +29,18 @@ public:
   using offset_t = utils::offset_t;
 
   const offset_t
-  operator[](size_t i)
+  operator[](
+    size_t i
+  )
   const
   {
     return s_[i];
   }
 
   void
-  add_count(uint32_t count)
+  add_count(
+    uint32_t count
+  )
   {
     offset_t o(start_, count);
     s_.push_back(o);
@@ -42,14 +48,18 @@ public:
   }
 
   void
-  add_end(size_t end)
+  add_end(
+    size_t end
+  )
   {
     assert(end > start_);
     add_count(end - start_);
   }
 
   std::pair<size_t, size_t>
-  range(size_t i)
+  range(
+    size_t i
+  )
   const
   {
     return s_[i].range();

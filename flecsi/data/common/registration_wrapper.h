@@ -114,12 +114,6 @@ struct client_registration_wrapper__<
   struct entity_walker_t :
     public flecsi::utils::tuple_walker__<entity_walker_t>
   {
-
-    template<typename T, T V>
-    T value(topology::typeify<T, V>){
-      return V;
-    }
-
     template<
       typename TUPLE_ENTRY_TYPE
     >
@@ -188,12 +182,6 @@ struct client_registration_wrapper__<
   struct connectivity_walker_t :
     public flecsi::utils::tuple_walker__<connectivity_walker_t>
   {
-
-    template<typename T, T V>
-    T value(topology::typeify<T, V>){
-      return V;
-    }
-
     template<
       typename TUPLE_ENTRY_TYPE
     >

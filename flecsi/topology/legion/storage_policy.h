@@ -160,7 +160,10 @@ struct legion_topology_storage_policy_t
     size_t M,
     class... S
   >
-  T * make(S &&... args)
+  T *
+  make(
+    S &&... args
+  )
   {
     using dtype = domain_entity<M, T>;
 
