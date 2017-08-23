@@ -49,7 +49,8 @@ public:
 
   using indexed_coloring_info_map_t = std::map<size_t, coloring_info_map_t>;
 
-  struct index_space_t{
+  struct index_space_t
+  {
     size_t index_space_id;
     Legion::IndexSpace index_space;
     Legion::FieldSpace field_space;
@@ -58,7 +59,8 @@ public:
     size_t total_num_entities;
   };
 
-  struct adjacency_t{
+  struct adjacency_t
+  {
     size_t index_space_id;
     size_t from_index_space_id;
     size_t to_index_space_id;

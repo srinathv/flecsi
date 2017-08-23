@@ -16,55 +16,80 @@
 namespace flecsi {
 namespace topology {
 
-template<size_t, typename>
+template<
+  size_t,
+  typename
+>
 class domain_entity;
 
-template<typename item_t>
+template<
+  typename item_t
+>
 struct array_buffer_type__{
   using type = item_t*;
 };
 
-template<size_t M, typename E>
+template<
+  size_t M,
+  typename E
+>
 struct array_buffer_type__<domain_entity<M, E>>{
   using type = E*;
 };
 
-template<typename item_t>
+template<
+  typename item_t
+>
 struct array_buffer_type__<item_t*>{
   using type = item_t*;
 };
 
-template<typename T>
+template<
+  typename T
+>
 struct array_buf_ref_type__{
   using type = T&;
 };
 
-template<typename S>
+template<
+  typename S
+>
 struct array_buf_ref_type__<S*>{
   using type = S*;
 };
 
-template<size_t M, class E>
+template<
+  size_t M,
+  class E
+>
 struct array_buf_ref_type__<domain_entity<M, E>>{
   using type = E*;
 };
 
-template<typename T, bool B>
+template<
+  typename T,
+  bool B
+>
 struct array_buf_ref_get__{
   static T get(T a, size_t i){
     return &a[i];
   }
 };
 
-template<typename T>
+template<
+  typename T
+>
 struct array_buf_ref_get__<T, false>{
   static auto get(T a, size_t i) -> decltype(a[i]){
     return a[i];
   }
 };
 
-template<typename T>
-class array_buffer__{
+template<
+  typename T
+>
+class array_buffer__
+{
 public:
   using item_t = typename array_buffer_type__<T>::type;
 
@@ -81,14 +106,18 @@ public:
   {}
 
   ref_t
-  operator[](size_t index)
+  operator[](
+    size_t index
+  )
   {
     return array_buf_ref_get__<
       item_t, std::is_pointer<ref_t>::value>::get(buf_, index);
   }
 
   const ref_t
-  operator[](size_t index)
+  operator[](
+    size_t index
+  )
   const
   {
     return array_buf_ref_get__<
@@ -182,14 +211,19 @@ public:
   }
 
   void
-  resize(size_t n)
+  resize(
+    size_t n
+  )
   {
     assert(n <= capacity_);
     size_ = n;
   }
 
   void
-  set_buffer(item_t buf, size_t size)
+  set_buffer(
+    item_t buf,
+    size_t size
+  )
   {
     buf_ = buf;
     size_ = size;
@@ -197,7 +231,11 @@ public:
   }
 
   void
-  set_buffer(item_t buf, size_t capacity, bool initialized)
+  set_buffer(
+    item_t buf,
+    size_t capacity,
+    bool initialized
+  )
   {
     buf_ = buf;
     capacity_ = capacity;
@@ -227,13 +265,17 @@ public:
     typename ... Args
   >
   void
-  assign(Args && ... args)
+  assign(
+    Args && ... args
+  )
   {
     assert(false && "unimplemented");
   }
 
   void
-  reserve(size_t n)
+  reserve(
+    size_t n
+  )
   {
     assert(false && "unimplemented");
   }
