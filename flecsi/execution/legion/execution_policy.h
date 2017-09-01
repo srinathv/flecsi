@@ -296,6 +296,10 @@ struct legion_execution_policy_t
             task_launcher.add_region_requirement(req);
           }
 
+          for(auto& future : init_args.futures){
+            task_launcher.add_future(future);
+          }
+
           // Enqueue the prolog.
           task_prolog_t
             task_prolog(legion_runtime, legion_context, task_launcher);
