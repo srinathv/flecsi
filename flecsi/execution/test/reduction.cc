@@ -25,13 +25,13 @@ double local_value_task(
 flecsi_register_task(local_value_task, loc, single|leaf);
 
 void check_values_task(
-    const double global_max,
-    const double global_min,
+    flecsi_future__<double> *global_max,
+    flecsi_future__<double> *global_min,
     const int num_colors,
     const int cycle)
 {
-  ASSERT_EQ(global_max, static_cast<double>(num_colors * cycle));
-  ASSERT_EQ(global_min, static_cast<double>(cycle));
+  ASSERT_EQ(global_max->get(), static_cast<double>(num_colors * cycle));
+  ASSERT_EQ(global_min->get(), static_cast<double>(cycle));
 
 }
 flecsi_register_task(check_values_task, loc, single|leaf);
@@ -45,7 +45,7 @@ void driver(int argc, char ** argv) {
   int num_colors, my_color;
   MPI_Comm_size(MPI_COMM_WORLD, &num_colors);
   MPI_Comm_rank(MPI_COMM_WORLD, &my_color);
-  clog(trace) << "Rank " << my_color << " in driver" << std::endl;
+  clog(error) << "Rank " << my_color << " in driver" << std::endl;
 
   for(int cycle=1; cycle < 10; cycle++) {
     auto local_future =

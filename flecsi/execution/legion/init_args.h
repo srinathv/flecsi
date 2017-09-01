@@ -20,11 +20,13 @@
 //! @date Initial file creation: May 19, 2017
 //----------------------------------------------------------------------------//
 
+#include <typeinfo>
 #include <vector>
 
 #include "legion.h"
 
 #include "flecsi/execution/common/execution_state.h"
+#include "flecsi/execution/legion/future.h"
 #include "flecsi/data/common/privilege.h"
 #include "flecsi/data/data_client_handle.h"
 
@@ -227,9 +229,15 @@ namespace execution {
     static
     typename std::enable_if_t<!std::is_base_of<data_handle_base_t, T>::value>
     handle(
-      T &
+      T &h
     )
     {
+      if (typeid(h) == typeid(flecsi_future__<double>*)) {
+        legion_future__<double>* dfuture;
+        std::memcpy(&dfuture, &h, sizeof(h));
+        clog(error) << "We have our pointer to " <<
+            dfuture->get() << std::endl;
+      }
     } // handle
 
     Legion::Runtime * runtime;
