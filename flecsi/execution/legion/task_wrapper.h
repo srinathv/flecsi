@@ -22,6 +22,7 @@
 #include "flecsi/execution/legion/registration_wrapper.h"
 #include "flecsi/execution/legion/init_handles.h"
 #include "flecsi/execution/legion/finalize_handles.h"
+#include "flecsi/execution/legion/futures_handles.h"
 #include "flecsi/utils/common.h"
 #include "flecsi/utils/tuple_function.h"
 #include "flecsi/utils/tuple_type_converter.h"
@@ -309,6 +310,9 @@ struct task_wrapper__
 
     init_handles_t init_handles(runtime, context, regions);
     init_handles.walk(task_args);
+
+    futures_handles_t futures_handles(runtime, context, task->futures);
+    futures_handles.walk(task_args);
 
     // Execute the user's task
     //return (*DELEGATE)(task_args);
