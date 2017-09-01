@@ -64,6 +64,8 @@ struct legion_future_concept__
   //! Abstract interface for reduction step.
   //--------------------------------------------------------------------------//
 
+  virtual const Legion::Future & pass_future() = 0;
+
   virtual void
   defer_dynamic_collective_arrival(
     Legion::Runtime* runtime,
@@ -155,6 +157,12 @@ struct legion_future_model__ : public legion_future_concept__<RETURN>
     Legion::DynamicCollective& dc_reduction)
   {
     runtime->defer_dynamic_collective_arrival(ctx, dc_reduction, legion_future_);
+  }
+
+  const Legion::Future &
+  pass_future()
+  {
+    return legion_future_;
   }
 
 private:
@@ -399,6 +407,13 @@ public:
   {
     return state_->get(index, silence_warnings);
   } // get
+
+
+  const Legion::Future &
+  pass_future()
+  {
+    return state_->pass_future();
+  }
 
   void
   defer_dynamic_collective_arrival(

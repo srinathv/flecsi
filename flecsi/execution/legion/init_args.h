@@ -226,7 +226,6 @@ namespace execution {
     template<
       typename T
     >
-    static
     typename std::enable_if_t<!std::is_base_of<data_handle_base_t, T>::value>
     handle(
       T &h
@@ -235,8 +234,7 @@ namespace execution {
       if (typeid(h) == typeid(flecsi_future__<double>*)) {
         legion_future__<double>* dfuture;
         std::memcpy(&dfuture, &h, sizeof(h));
-        clog(error) << "We have our pointer to " <<
-            dfuture->get() << std::endl;
+        futures.push_back(dfuture->pass_future());
       }
     } // handle
 
