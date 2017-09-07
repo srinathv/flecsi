@@ -26,7 +26,7 @@
 
 #include "flecsi/utils/tuple_walker.h"
 
-clog_register_tag(epilog);
+//clog_register_tag(epilog);
 
 namespace flecsi {
 namespace execution {
@@ -98,11 +98,11 @@ namespace execution {
         const int my_color = runtime->find_local_MPI_rank();
 
         {
-        clog(trace) << "rank " << my_color << " WRITE PHASE EPILOGUE" <<
-          std::endl;
+        //clog(trace) << "rank " << my_color << " WRITE PHASE EPILOGUE" <<
+        //  std::endl;
 
-        clog(trace) << "rank " << my_color << " advances " <<
-          *(h.pbarrier_as_owner_ptr) <<  std::endl;
+        //clog(trace) << "rank " << my_color << " advances " <<
+        //  *(h.pbarrier_as_owner_ptr) <<  std::endl;
         } // scope
 
         *(h.pbarrier_as_owner_ptr) = runtime->advance_phase_barrier(context,
@@ -115,9 +115,9 @@ namespace execution {
         // As user
         for(size_t owner=0; owner<_pbp_size; owner++) {
           {
-          clog_tag_guard(epilog);
-          clog(trace) << "rank " << my_color << " arrives & advances " <<
-            *(h.ghost_owners_pbarriers_ptrs[owner]) << std::endl;
+          //clog_tag_guard(epilog);
+          //clog(trace) << "rank " << my_color << " arrives & advances " <<
+          //  *(h.ghost_owners_pbarriers_ptrs[owner]) << std::endl;
           } // scope
 
           // Phase READ

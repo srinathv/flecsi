@@ -255,7 +255,7 @@ __flecsi_internal_legion_task(owner_pos_compaction_task, void) {
         exclusive_itr != idx_space.second.exclusive.end();
         ++exclusive_itr)
     {
-      clog(trace) << my_color << " key " << idx_space.first << 
+      clog(trace) << my_color << " key " << idx_space.first <<
         " exclusive " <<" " <<  *exclusive_itr << std::endl;
       expanded_itr++;
     } // exclusive_itr
@@ -299,7 +299,7 @@ __flecsi_internal_legion_task(owner_pos_compaction_task, void) {
     } // ghost_itr
     region_idx++;
   } // for idx_space
-  } // clog_tag_guard
+  } // //clog_tag_guard
 
 } // owner_pos_compaction_task
 
@@ -321,20 +321,20 @@ __flecsi_internal_legion_task(ghost_copy_task, void) {
   };
   args_t args = *(args_t*)task->args;
 
-  clog_assert(regions.size() == 2, "ghost_copy_task requires 2 regions");
-  clog_assert(task->regions.size() == 2, "ghost_copy_task requires 2 regions");
-  clog_assert((task->regions[1].privilege_fields.size() -
-   task->regions[0].privilege_fields.size()) == 1,
-   "ghost region additionally requires ghost_owner_pos_fid");
+  //clog_assert(regions.size() == 2, "ghost_copy_task requires 2 regions");
+  //clog_assert(task->regions.size() == 2, "ghost_copy_task requires 2 regions");
+  //clog_assert((task->regions[1].privilege_fields.size() -
+  // task->regions[0].privilege_fields.size()) == 1,
+  // "ghost region additionally requires ghost_owner_pos_fid");
 
   legion_map owner_map = task->futures[0].get_result<legion_map>();
 
-  for(auto itr = owner_map.begin(); itr != owner_map.end(); itr++)
+  //for(auto itr = owner_map.begin(); itr != owner_map.end(); itr++)
       {
-      clog_tag_guard(legion_tasks);
-      clog(trace) << "my_color= " << my_color << " gid " << itr->first <<
-        " maps to lid " << itr->second << " current owner lid is " <<
-        args.owner << std::endl;
+      //clog_tag_guard(legion_tasks);
+      //clog(trace) << "my_color= " << my_color << " gid " << itr->first <<
+      //  " maps to lid " << itr->second << " current owner lid is " <<
+      //  args.owner << std::endl;
       }
 
   auto ghost_owner_pos_fid = 
@@ -365,9 +365,9 @@ __flecsi_internal_legion_task(ghost_copy_task, void) {
     // Look up field info in context
     auto iitr = 
       context.field_info_map().find({args.data_client_hash, args.index_space});
-    clog_assert(iitr != context.field_info_map().end(), "invalid index space");
+    //clog_assert(iitr != context.field_info_map().end(), "invalid index space");
     auto fitr = iitr->second.find(fid);
-    clog_assert(fitr != iitr->second.end(), "invalid fid");
+    //clog_assert(fitr != iitr->second.end(), "invalid fid");
     const context_t::field_info_t& field_info = fitr->second;
 
     auto acc_shared = regions[0].get_field_accessor(fid);
@@ -378,11 +378,11 @@ __flecsi_internal_legion_task(ghost_copy_task, void) {
         owner_rect, owner_sub_rect, byte_offset));
 
     {
-    clog_tag_guard(legion_tasks);
-    clog(trace) << "my_color = " << my_color << " owner lid = " <<
-            args.owner << " owner rect = " <<
-            owner_rect.lo[0] << "," << owner_rect.lo[1] << " to " <<
-            owner_rect.hi[0] << "," << owner_rect.hi[1] << std::endl;
+    //clog_tag_guard(legion_tasks);
+    //clog(trace) << "my_color = " << my_color << " owner lid = " <<
+    //        args.owner << " owner rect = " <<
+    //        owner_rect.lo[0] << "," << owner_rect.lo[1] << " to " <<
+    //        owner_rect.hi[0] << "," << owner_rect.hi[1] << std::endl;
     }
 
     uint8_t * ghost_data =
@@ -393,9 +393,9 @@ __flecsi_internal_legion_task(ghost_copy_task, void) {
       LegionRuntime::Arrays::Point<2> ghost_ref = position_ref_data[ghost_pt];
 
       {
-      clog_tag_guard(legion_tasks);
-      clog(trace) << my_color << " copy from position " << ghost_ref.x[0] <<
-              "," << ghost_ref.x[1] << std::endl;
+      //clog_tag_guard(legion_tasks);
+      //clog(trace) << my_color << " copy from position " << ghost_ref.x[0] <<
+      //        "," << ghost_ref.x[1] << std::endl;
       }
 
       if(owner_map[ghost_ref.x[0]] == args.owner) {
@@ -491,7 +491,7 @@ __flecsi_internal_legion_task(fill_connectivity_task, void)
 
   using namespace execution;
 
-  clog(trace) << "fill connectivity" << std::endl;
+  //clog(trace) << "fill connectivity" << std::endl;
   using tuple_t = std::tuple<size_t, size_t, size_t>;
 
   context_t& context = context_t::instance();

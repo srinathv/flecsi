@@ -24,7 +24,7 @@
 #include "flecsi/utils/common.h"
 #include "flecsi/data/data_constants.h" 
 
-clog_register_tag(runtime_driver);
+//clog_register_tag(runtime_driver);
 
 namespace flecsi {
 namespace execution {
@@ -45,8 +45,8 @@ runtime_driver(
   //using data::storage_label_type_t;
 
   {
-  clog_tag_guard(runtime_driver);
-  clog(info) << "In Legion runtime driver" << std::endl;
+  //clog_tag_guard(runtime_driver);
+  //clog(info) << "In Legion runtime driver" << std::endl;
   }
 
   // Get the input arguments from the Legion runtime
@@ -96,8 +96,8 @@ runtime_driver(
   int num_colors;
   MPI_Comm_size(MPI_COMM_WORLD, &num_colors);
   {
-  clog_tag_guard(runtime_driver);
-  clog(info) << "MPI num_colors is " << num_colors << std::endl;
+  //clog_tag_guard(runtime_driver);
+  //clog(info) << "MPI num_colors is " << num_colors << std::endl;
   }
 
   data::legion_data_t data(ctx, runtime, num_colors);
@@ -123,8 +123,8 @@ runtime_driver(
 
 #if defined FLECSI_ENABLE_SPECIALIZATION_TLT_INIT
   {
-  clog_tag_guard(runtime_driver);
-  clog(info) << "Executing specialization top-level-task init" << std::endl;
+  //clog_tag_guard(runtime_driver);
+  //clog(info) << "Executing specialization top-level-task init" << std::endl;
   }
 
 #if !defined(ENABLE_LEGION_TLS)
@@ -232,9 +232,9 @@ runtime_driver(
     } // for
 
     {
-      clog_tag_guard(runtime_driver);
-      clog(trace) << "fields_map[" <<idx_space<<"] has "<<
-        fields_map[idx_space].size()<< " fields"<<std::endl;
+      //clog_tag_guard(runtime_driver);
+      //clog(trace) << "fields_map[" <<idx_space<<"] has "<<
+      //  fields_map[idx_space].size()<< " fields"<<std::endl;
     } // scope
   } // for
 
@@ -271,8 +271,8 @@ runtime_driver(
     context_.task_id<__flecsi_internal_task_key(spmd_task)>();
 
   {
-  clog_tag_guard(runtime_driver);
-  clog(trace) << "spmd_task is: " << spmd_id << std::endl;
+  //clog_tag_guard(runtime_driver);
+  //clog(trace) << "spmd_task is: " << spmd_id << std::endl;
   } // scope
 
 
@@ -296,17 +296,17 @@ runtime_driver(
           phase_barriers_map[idx_space][field_id][color]);
       
         {
-        clog_tag_guard(runtime_driver);
-        clog(trace) << " Color " << color << " idx_space " << idx_space 
-        << ", fid = " << field_id<<
-          " has " << color_info.ghost_owners.size() << 
-          " ghost owners" << std::endl;
+        //clog_tag_guard(runtime_driver);
+        //clog(trace) << " Color " << color << " idx_space " << idx_space 
+        //<< ", fid = " << field_id<<
+        //  " has " << color_info.ghost_owners.size() <<
+        //  " ghost owners" << std::endl;
         } // scope
 
         for(auto owner : color_info.ghost_owners) {
           {
-          clog_tag_guard(runtime_driver);
-          clog(trace) << owner << std::endl;
+          //clog_tag_guard(runtime_driver);
+          //clog(trace) << owner << std::endl;
           } // scope
 
           owners_pbarriers[idx_space][field_id].push_back(
@@ -431,9 +431,9 @@ runtime_driver(
       
       for(auto ghost_owner : color_info.ghost_owners) {
         {
-        clog_tag_guard(runtime_driver);
-        clog(trace) << " Color " << color << " idx_space " << idx_space << 
-          " has owner " << ghost_owner << std::endl;
+        //clog_tag_guard(runtime_driver);
+        //clog(trace) << " Color " << color << " idx_space " << idx_space << 
+        //  " has owner " << ghost_owner << std::endl;
         } // scope
 
         Legion::LogicalRegion ghost_owner_lregion =
@@ -568,8 +568,8 @@ spmd_task(
   runtime->unmap_all_regions(ctx);
 
   {
-  clog_tag_guard(runtime_driver);
-  clog(info) << "Executing spmd task " << my_color << std::endl;
+  //clog_tag_guard(runtime_driver);
+  //clog(info) << "Executing spmd task " << my_color << std::endl;
   }
 
   // Add additional setup.
@@ -581,7 +581,7 @@ spmd_task(
   auto ghost_owner_pos_fid = 
     Legion::FieldID(internal_field::ghost_owner_pos);
 
-  clog_assert(task->arglen > 0, "spmd_task called without arguments");
+  //clog_assert(task->arglen > 0, "spmd_task called without arguments");
 
   //---------------------------------------------------------------------//
   // Deserialize task arguments
@@ -604,10 +604,10 @@ spmd_task(
   if (number_of_global_fields>0) total_num_idx_spaces++;
   if (number_of_color_fields>0) total_num_idx_spaces++;
 
-  clog_assert(regions.size() >= (total_num_idx_spaces),
-      "fewer regions than data handles");
-  clog_assert(task->regions.size() >= (total_num_idx_spaces),
-      "fewer regions than data handles");
+  //clog_assert(regions.size() >= (total_num_idx_spaces),
+  //    "fewer regions than data handles");
+  //clog_assert(task->regions.size() >= (total_num_idx_spaces),
+  //    "fewer regions than data handles");
   }//scope
 
   // #2 deserialize field info
@@ -706,9 +706,9 @@ spmd_task(
             ghost_owners_pbarriers[indx];
          indx++;
          {
-         clog_tag_guard(runtime_driver);
-         clog(trace) <<my_color <<" has ghost_owners_pbarrier "<<
-             ghost_owners_pbarriers[indx-1]<<std::endl;
+         //clog_tag_guard(runtime_driver);
+         //clog(trace) <<my_color <<" has ghost_owners_pbarrier "<<
+         //    ghost_owners_pbarriers[indx-1]<<std::endl;
          } // scope
       }//owner
     }//field_id
@@ -737,16 +737,16 @@ spmd_task(
       coloring_info_map = context_.coloring_info(idx_space);
 
     auto itr = coloring_info_map.find(my_color);
-    clog_assert(itr != coloring_info_map.end(),
-        "Can't find partition info for my color");
+    //clog_assert(itr != coloring_info_map.end(),
+    //    "Can't find partition info for my color");
     const flecsi::coloring::coloring_info_t coloring_info = itr->second;
 
     {
-    clog_tag_guard(runtime_driver);
-    clog(trace) << my_color << " handle " << idx_space <<
-        " exclusive " << coloring_info.exclusive <<
-        " shared " << coloring_info.shared <<
-        " ghost " << coloring_info.ghost << std::endl;
+    //clog_tag_guard(runtime_driver);
+    //clog(trace) << my_color << " handle " << idx_space <<
+    //    " exclusive " << coloring_info.exclusive <<
+    //    " shared " << coloring_info.shared <<
+    //    " ghost " << coloring_info.ghost << std::endl;
     } // scope
 
     Legion::IndexSpace color_ispace = 
@@ -832,28 +832,28 @@ spmd_task(
       const bool can_fail = false;
       const bool wait_until_ready = true;
 
-      clog_assert(region_index < regions.size(),
-          "SPMD attempted to access more regions than passed");
+      //clog_assert(region_index < regions.size(),
+      //    "SPMD attempted to access more regions than passed");
 
       runtime->retrieve_semantic_information(regions[region_index]
           .get_logical_region(), OWNER_COLOR_TAG,
           owner_color, size, can_fail, wait_until_ready);
-      clog_assert(size == sizeof(LegionRuntime::Arrays::coord_t),
-          "Unable to map gid to lid with Legion semantic tag");
+      //clog_assert(size == sizeof(LegionRuntime::Arrays::coord_t),
+      //    "Unable to map gid to lid with Legion semantic tag");
       ispace_dmap[idx_space]
        .global_to_local_color_map[*(LegionRuntime::Arrays::coord_t*)owner_color]
        = owner;
 
       {
-      clog_tag_guard(runtime_driver);
-      clog(trace) << my_color << " key " << idx_space << " gid " <<
-          *(LegionRuntime::Arrays::coord_t*)owner_color <<
-          " maps to " << owner << std::endl;
+      //clog_tag_guard(runtime_driver);
+      //clog(trace) << my_color << " key " << idx_space << " gid " <<
+      //    *(LegionRuntime::Arrays::coord_t*)owner_color <<
+      //    " maps to " << owner << std::endl;
       } // scope
 
       region_index++;
-      clog_assert(region_index <= regions.size(),
-          "SPMD attempted to access more regions than passed");
+      //clog_assert(region_index <= regions.size(),
+      //    "SPMD attempted to access more regions than passed");
     } // for owner
 
     ispace_dmap[idx_space].ghost_owners_lregions
@@ -867,9 +867,9 @@ spmd_task(
       Legion::TaskArgument(nullptr, 0));
 
     {
-    clog_tag_guard(runtime_driver);
-    clog(trace) << "Rank" << my_color << " Index " << idx_space <<
-      " RW " << ispace_dmap[idx_space].color_region << std::endl;
+    //clog_tag_guard(runtime_driver);
+    //clog(trace) << "Rank" << my_color << " Index " << idx_space <<
+    //  " RW " << ispace_dmap[idx_space].color_region << std::endl;
     } // scope
 
     fix_ghost_refs_launcher.add_region_requirement(

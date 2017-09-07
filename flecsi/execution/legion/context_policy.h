@@ -194,8 +194,8 @@ struct legion_context_policy_t
   )
   {
     {
-    clog_tag_guard(context);
-    clog(info) << "Pushing state for " << key << std::endl;
+    //clog_tag_guard(context);
+    //clog(info) << "Pushing state for " << key << std::endl;
     }
 
     state_[key].push(std::shared_ptr<legion_runtime_state_t>
@@ -215,8 +215,8 @@ struct legion_context_policy_t
   )
   {
     {
-    clog_tag_guard(context);
-    clog(info) << "Popping state for " << key << std::endl;
+    //clog_tag_guard(context);
+    //clog(info) << "Popping state for " << key << std::endl;
     }
 
     state_[key].pop();
@@ -238,8 +238,8 @@ struct legion_context_policy_t
   set_mpi_state(bool active)
   {
     {
-    clog_tag_guard(context);
-    clog(info) << "set_mpi_state " << active << std::endl;
+    //clog_tag_guard(context);
+    //clog(info) << "set_mpi_state " << active << std::endl;
     }
 
     mpi_active_ = active;
@@ -257,8 +257,8 @@ struct legion_context_policy_t
   )
   {
     {
-    clog_tag_guard(context);
-    clog(info) << "set_mpi_task" << std::endl;
+    //clog_tag_guard(context);
+    //clog(info) << "set_mpi_task" << std::endl;
     }
 
     mpi_task_ = mpi_task;
@@ -304,8 +304,8 @@ struct legion_context_policy_t
   handoff_to_legion()
   {
     {
-    clog_tag_guard(context);
-    clog(info) << "handoff_to_legion" << std::endl;
+    //clog_tag_guard(context);
+    //clog(info) << "handoff_to_legion" << std::endl;
     }
 
     handshake_.mpi_handoff_to_legion();
@@ -319,8 +319,8 @@ struct legion_context_policy_t
   wait_on_legion()
   {
     {
-    clog_tag_guard(context);
-    clog(info) << "wait_on_legion" << std::endl;
+    //clog_tag_guard(context);
+    //clog(info) << "wait_on_legion" << std::endl;
     }
 
     handshake_.mpi_wait_on_legion();
@@ -334,8 +334,8 @@ struct legion_context_policy_t
   handoff_to_mpi()
   {
     {
-    clog_tag_guard(context);
-    clog(info) << "handoff_to_mpi" << std::endl;
+    //clog_tag_guard(context);
+    //clog(info) << "handoff_to_mpi" << std::endl;
     }
 
     handshake_.legion_handoff_to_mpi();
@@ -349,8 +349,8 @@ struct legion_context_policy_t
   wait_on_mpi()
   {
     {
-    clog_tag_guard(context);
-    clog(info) << "wait_on_mpi" << std::endl;
+    //clog_tag_guard(context);
+    //clog(info) << "wait_on_mpi" << std::endl;
     }
 
     handshake_.legion_wait_on_mpi();
@@ -432,11 +432,11 @@ struct legion_context_policy_t
     const registration_function_t & callback
   )
   {
-    clog(info) << "Registering task callback " << name << " with key " <<
-      key << std::endl;
+    //clog(info) << "Registering task callback " << name << " with key " <<
+    //  key << std::endl;
 
-    clog_assert(task_registry_.find(key) == task_registry_.end(),
-      "task key already exists");
+    //clog_assert(task_registry_.find(key) == task_registry_.end(),
+    //  "task key already exists");
 
     task_registry_[key] = std::make_tuple(unique_tid_t::instance().next(),
       processor, launch, name, callback);
@@ -458,8 +458,8 @@ struct legion_context_policy_t
   {
     auto task_entry = task_registry_.find(KEY);
 
-    clog_assert(task_entry != task_registry_.end(),
-      "task key " << KEY << " does not exist");
+    //clog_assert(task_entry != task_registry_.end(),
+    //  "task key " << KEY << " does not exist");
 
     return task_entry->second;
   } // task_info
@@ -475,8 +475,8 @@ struct legion_context_policy_t
   {
     auto task_entry = task_registry_.find(key);
 
-    clog_assert(task_entry != task_registry_.end(),
-      "task key " << key << " does not exist");
+    //clog_assert(task_entry != task_registry_.end(),
+    //  "task key " << key << " does not exist");
 
     return task_entry->second;
   } // task_info
@@ -492,10 +492,6 @@ struct legion_context_policy_t
     return_type                                                                \
     name()                                                                     \
     {                                                                          \
-      {                                                                        \
-      clog_tag_guard(context);                                                 \
-      clog(info) << "Returning " << #name << " for " << KEY << std::endl;      \
-      }                                                                        \
       return std::get<index>(task_info<KEY>());                                \
     }
 
@@ -509,10 +505,6 @@ struct legion_context_policy_t
     return_type                                                                \
     name(size_t key)                                                           \
     {                                                                          \
-      {                                                                        \
-      clog_tag_guard(context);                                                 \
-      clog(info) << "Returning " << #name << " for " << key << std::endl;      \
-      }                                                                        \
       return std::get<index>(task_info(key));                                  \
     }
 

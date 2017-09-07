@@ -104,8 +104,8 @@ struct init_handles_t : public utils::tuple_walker__<init_handles_t>
       sizes[r] = 0;
       prs[r] = Legion::PhysicalRegion();
 
-      clog(error) << "reserved permissions mode used on region " <<
-        r << std::endl;
+      //clog(error) << "reserved permissions mode used on region " <<
+      //  r << std::endl;
     }
     else {
       prs[r] = regions[region + r];
@@ -181,7 +181,7 @@ struct init_handles_t : public utils::tuple_walker__<init_handles_t>
         h.ghost_priv = GHOST_PERMISSIONS;
         break;
       default:
-        clog_fatal("invalid permissions case");
+        //clog_fatal("invalid permissions case");
     } // switch
 
     std::memcpy(h.combined_data + pos, data[r], sizes[r] * sizeof(T));
@@ -351,7 +351,7 @@ struct init_handles_t : public utils::tuple_walker__<init_handles_t>
       // Store these for translation to CRS
       adj.num_offsets = num_offsets;
 
-      clog(trace) << "num_offsets: " << num_offsets << std::endl;
+      //clog(trace) << "num_offsets: " << num_offsets << std::endl;
 
       lr = regions[region].get_logical_region();
       is = lr.get_index_space();

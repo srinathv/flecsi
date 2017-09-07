@@ -27,7 +27,7 @@
 #include "flecsi/utils/tuple_type_converter.h"
 #include "flecsi/utils/tuple_walker.h"
 
-clog_register_tag(wrapper);
+//clog_register_tag(wrapper);
 
 namespace flecsi {
 namespace execution {
@@ -160,9 +160,9 @@ struct pure_task_wrapper__
   )
   {
     {
-    clog_tag_guard(wrapper);
-    clog(info) << "Executing PURE registration callback (" <<
-      task_name << ")" << std::endl;
+    //clog_tag_guard(wrapper);
+    //clog(info) << "Executing PURE registration callback (" <<
+    //  task_name << ")" << std::endl;
     }
 
     // Create configuration options using launch information provided
@@ -173,18 +173,18 @@ struct pure_task_wrapper__
     switch(processor) {
       case processor_type_t::loc:
         {
-        clog_tag_guard(wrapper);
-        clog(info) << "Registering PURE loc task: " <<
-          task_name << " " << launch << std::endl << std::endl;
+        //clog_tag_guard(wrapper);
+        //clog(info) << "Registering PURE loc task: " <<
+        //  task_name << " " << launch << std::endl << std::endl;
         }
         registration_wrapper__<RETURN, TASK>::register_task(
           tid, Legion::Processor::LOC_PROC, config_options, task_name);
         break;
       case processor_type_t::toc:
         {
-        clog_tag_guard(wrapper);
-        clog(info) << "Registering PURE toc task: " <<
-          task_name << std::endl << std::endl;
+        //clog_tag_guard(wrapper);
+        //clog(info) << "Registering PURE toc task: " <<
+        //  task_name << std::endl << std::endl;
         }
         registration_wrapper__<RETURN, TASK>::register_task(
           tid, Legion::Processor::TOC_PROC, config_options, task_name);
@@ -242,8 +242,8 @@ struct task_wrapper__
   )
   {
     {
-    clog_tag_guard(wrapper);
-    clog(info) << "Executing registration callback for " << name << std::endl;
+    //clog_tag_guard(wrapper);
+    //clog(info) << "Executing registration callback for " << name << std::endl;
     }
 
     // Create configuration options using launch information provided
@@ -254,27 +254,27 @@ struct task_wrapper__
     switch(processor) {
       case processor_type_t::loc:
         {
-        clog_tag_guard(wrapper);
-        clog(info) << "Registering loc task: " <<
-          name << std::endl << std::endl;
+        //clog_tag_guard(wrapper);
+        //clog(info) << "Registering loc task: " <<
+        //  name << std::endl << std::endl;
         }
         registration_wrapper__<RETURN, execute_user_task>::register_task(
           tid, Legion::Processor::LOC_PROC, config_options, name);
         break;
       case processor_type_t::toc:
         {
-        clog_tag_guard(wrapper);
-        clog(info) << "Registering toc task: " <<
-          name << std::endl << std::endl;
+        //clog_tag_guard(wrapper);
+        //clog(info) << "Registering toc task: " <<
+        //  name << std::endl << std::endl;
         }
         registration_wrapper__<RETURN, execute_user_task>::register_task(
           tid, Legion::Processor::TOC_PROC, config_options, name);
         break;
       case processor_type_t::mpi:
         {
-        clog_tag_guard(wrapper);
-        clog(info) << "Registering MPI task: " <<
-          name << std::endl << std::endl;
+        //clog_tag_guard(wrapper);
+        //clog(info) << "Registering MPI task: " <<
+        //  name << std::endl << std::endl;
         }
         registration_wrapper__<void, execute_mpi_task>::register_task(
           tid, Legion::Processor::LOC_PROC, config_options, name);
@@ -294,8 +294,8 @@ struct task_wrapper__
   )
   {
     {
-    clog_tag_guard(wrapper);
-    clog(info) << "In execute_user_task" << std::endl;
+    //clog_tag_guard(wrapper);
+    //clog(info) << "In execute_user_task" << std::endl;
     }
 
     // Unpack task arguments
@@ -338,8 +338,8 @@ struct task_wrapper__
   )
   {
     {
-    clog_tag_guard(wrapper);
-    clog(info) << "In execute_mpi_task" << std::endl;
+    //clog_tag_guard(wrapper);
+    //clog(info) << "In execute_mpi_task" << std::endl;
     }
 
     // Unpack task arguments.

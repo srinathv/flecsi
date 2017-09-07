@@ -113,8 +113,8 @@ legion_context_policy_t::unset_call_mpi(
 )
 {
   {
-  clog_tag_guard(context);
-  clog(info) << "In unset_call_mpi" << std::endl;
+  //clog_tag_guard(context);
+  //clog(info) << "In unset_call_mpi" << std::endl;
   }
 
   const auto tid = context_t::instance().task_id<
