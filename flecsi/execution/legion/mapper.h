@@ -22,7 +22,7 @@
 #include "flecsi/execution/context.h"
 #include "flecsi/execution/legion/legion_tasks.h"
 
-clog_register_tag(legion_mapper);
+//clog_register_tag(legion_mapper);
 
 //----------------------------------------------------------------------------//
 //! Mapper ID 
@@ -116,10 +116,10 @@ class mpi_mapper_t : public Legion::Mapping::DefaultMapper
     } // end for
 
     {
-    clog_tag_guard(legion_mapper);
-    clog(info) <<  "Mapper constuctor: local=" << local << " cpus=" <<
-        local_cpus.size() << " gpus=" << local_gpus.size() <<
-        " sysmem=" << local_sysmem<<std::endl;
+    //clog_tag_guard(legion_mapper);
+    //clog(info) <<  "Mapper constuctor: local=" << local << " cpus=" <<
+    //    local_cpus.size() << " gpus=" << local_gpus.size() <<
+    //    " sysmem=" << local_sysmem<<std::endl;
     }
   } // end mpi_mapper_t
 
@@ -269,9 +269,9 @@ class mpi_mapper_t : public Legion::Mapping::DefaultMapper
 
           if (task.regions[indx].tag == EXCLUSIVE_LR){
 
-            clog_assert ((task.regions.size()>=(indx+2)),
-             "ERROR:: wrong number of regions passed to the task wirth \
-               the  tag = MAPPER_COMPACTED_STORAGE");
+            //clog_assert ((task.regions.size()>=(indx+2)),
+            // "ERROR:: wrong number of regions passed to the task wirth \
+            //   the  tag = MAPPER_COMPACTED_STORAGE");
 
 
             regions.push_back(task.regions[indx].region); 
@@ -281,8 +281,8 @@ class mpi_mapper_t : public Legion::Mapping::DefaultMapper
             if (!runtime->find_or_create_physical_instance(
               ctx, target_mem, layout_constraints,
               regions, result, created, true/*acquire*/, GC_NEVER_PRIORITY)) {
-              clog(fatal)<<"ERROR: FLeCSI mapper failed to allocate instance"<<
-              std::endl;
+              //clog(fatal)<<"ERROR: FLeCSI mapper failed to allocate instance"<<
+              //std::endl;
             }//end if
 
             for (size_t j=0; j<3; j++)
@@ -296,8 +296,8 @@ class mpi_mapper_t : public Legion::Mapping::DefaultMapper
             if (!runtime->find_or_create_physical_instance(
               ctx, target_mem, layout_constraints,
               regions, result, created, true/*acquire*/, GC_NEVER_PRIORITY)) {
-              clog(fatal)<<"ERROR: FLeCSI mapper failed to allocate instance"<<
-              std::endl;
+              //clog(fatal)<<"ERROR: FLeCSI mapper failed to allocate instance"<<
+              //std::endl;
             }//end if
 
             output.chosen_instances[indx].push_back(result);
@@ -326,8 +326,8 @@ class mpi_mapper_t : public Legion::Mapping::DefaultMapper
         if (!runtime->find_or_create_physical_instance(
           ctx, target_mem, layout_constraints,
           regions, result, created, true/*acquire*/, GC_NEVER_PRIORITY)) {
-            clog(fatal)<<"ERROR: FLeCSI mapper failed to allocate instance"<<
-            std::endl;
+            //clog(fatal)<<"ERROR: FLeCSI mapper failed to allocate instance"<<
+            //std::endl;
         }//end if
 
         for (size_t j=0; j<3; j++)

@@ -133,12 +133,12 @@ struct legion_execution_policy_t
     std::string name
   )
   {
-    clog(info) << "Registering legion task " << KEY <<
-      " " << name << std::endl;
+    //clog(info) << "Registering legion task " << KEY <<
+    //  " " << name << std::endl;
 
     if(!context_t::instance().register_task(KEY, processor, launch, name,
       pure_task_wrapper__<RETURN, TASK>::registration_callback)) {
-      clog(fatal) << "callback registration failed for " << name << std::endl;
+      //clog(fatal) << "callback registration failed for " << name << std::endl;
     } // if
 
     return true;
@@ -166,7 +166,7 @@ struct legion_execution_policy_t
     if(!context_t::instance().register_task(
       typeid(FUNCTOR_TYPE).hash_code(), processor, launch, name,
       wrapper_t::registration_callback)) {
-      clog(fatal) << "callback registration failed for " << name << std::endl;
+      //clog(fatal) << "callback registration failed for " << name << std::endl;
     } // if
 
     return true;
@@ -196,7 +196,7 @@ struct legion_execution_policy_t
 
     if(!context_t::instance().register_task(KEY, processor, launch, name,
       wrapper_t::registration_callback)) {
-      clog(fatal) << "callback registration failed for " << name << std::endl;
+      //clog(fatal) << "callback registration failed for " << name << std::endl;
     } // if
 
     return true;
@@ -243,8 +243,8 @@ struct legion_execution_policy_t
     // Handle MPI and Legion invocations separately.
     if(processor_type == processor_type_t::mpi) {
       {
-      clog_tag_guard(execution);
-      clog(info) << "Executing MPI task: " << KEY << std::endl;
+      //clog_tag_guard(execution);
+      //clog(info) << "Executing MPI task: " << KEY << std::endl;
       }
 
       ArgumentMap arg_map;
@@ -281,8 +281,8 @@ struct legion_execution_policy_t
 
         case launch_type_t::single:
           {
-          clog_tag_guard(execution);
-          clog(info) << "Executing single task: " << KEY << std::endl;
+          //clog_tag_guard(execution);
+          //clog(info) << "Executing single task: " << KEY << std::endl;
 
           // Create a task launcher, passing the task arguments.
           TaskLauncher task_launcher(context_.task_id<KEY>(),
@@ -303,8 +303,8 @@ struct legion_execution_policy_t
           task_prolog.launch_copies();
 
           // Enqueue the task.
-          clog(trace) << "Execute flecsi/legion task " << KEY << " on rank " <<
-              legion_runtime->find_local_MPI_rank() << std::endl;
+          //clog(trace) << "Execute flecsi/legion task " << KEY << " on rank " <<
+          //    legion_runtime->find_local_MPI_rank() << std::endl;
           auto future = legion_runtime->execute_task(legion_context,
             task_launcher);
 
@@ -318,8 +318,8 @@ struct legion_execution_policy_t
 
         case launch_type_t::index:
           {
-          clog_tag_guard(execution);
-          clog(info) << "Executing index task: " << KEY << std::endl;
+          //clog_tag_guard(execution);
+          //clog(info) << "Executing index task: " << KEY << std::endl;
 
           // FIXME:
           // FIXME: This looks incomplete!
@@ -347,7 +347,7 @@ struct legion_execution_policy_t
           } // scope
 
         default:
-          clog(fatal) << "invalid launch type" << std::endl;
+          //clog(fatal) << "invalid launch type" << std::endl;
           throw std::runtime_error ("invalid launch type");
 
       } // switch

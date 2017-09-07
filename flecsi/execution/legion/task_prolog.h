@@ -27,7 +27,7 @@
 #include "flecsi/execution/context.h"
 #include "flecsi/execution/legion/internal_field.h"
 
-clog_register_tag(prolog);
+//clog_register_tag(prolog);
 
 namespace flecsi {
 namespace execution {
@@ -106,7 +106,7 @@ namespace execution {
 
         if(read_phase) {
           if(!*(h.ghost_is_readable)) {
-            {
+           /* {
               clog_tag_guard(prolog);
               clog(trace) << "rank " << my_color << " READ PHASE PROLOGUE" <<
                   std::endl;
@@ -114,7 +114,7 @@ namespace execution {
               // As owner
               clog(trace) << "rank " << my_color << " arrives & advances " <<
                   *(h.pbarrier_as_owner_ptr) << std::endl;
-            } // scope
+            }*/ // scope
 
             // Phase WRITE
             h.pbarrier_as_owner_ptr->arrive(1);

@@ -35,7 +35,7 @@
 /// \date Initial file creation: Jun 7, 2017
 ///
 
-clog_register_tag(legion_data);
+//clog_register_tag(legion_data);
 
 namespace flecsi {
 namespace data {
@@ -218,9 +218,9 @@ public:
     is.total_num_entities = 0;
     for(auto color_idx : coloring_info_map){
       {
-      clog_tag_guard(legion_data);
-      clog(trace) << "index: " << index_space_id << " color: " << 
-        color_idx.first << " " << color_idx.second << std::endl;
+      //clog_tag_guard(legion_data);
+      //clog(trace) << "index: " << index_space_id << " color: " << 
+      //  color_idx.first << " " << color_idx.second << std::endl;
       } // scope
       
       is.total_num_entities = std::max(is.total_num_entities,
@@ -229,8 +229,8 @@ public:
     } // for color_idx
 
     {
-    clog_tag_guard(legion_data);
-    clog(trace) << "total_num_entities " << is.total_num_entities << std::endl;
+    //clog_tag_guard(legion_data);
+    //clog(trace) << "total_num_entities " << is.total_num_entities << std::endl;
     } // scope
 
     // Create expanded index space
@@ -269,8 +269,8 @@ public:
 
     adjacency_t c;
 
-    clog_assert(adjacencies_.find(adjacency_info.index_space) == 
-                adjacencies_.end(), "adjacency exists");
+    //clog_assert(adjacencies_.find(adjacency_info.index_space) == 
+    //            adjacencies_.end(), "adjacency exists");
 
     adjacencies_.insert(adjacency_info.index_space);
 
@@ -279,16 +279,16 @@ public:
     c.to_index_space_id = adjacency_info.to_index_space;
 
     auto fitr = index_space_map_.find(c.from_index_space_id);
-    clog_assert(fitr != index_space_map_.end(), "invalid from index space");
+    //clog_assert(fitr != index_space_map_.end(), "invalid from index space");
     const index_space_t& fi = fitr->second;
 
     auto titr = index_space_map_.find(c.to_index_space_id);
-    clog_assert(titr != index_space_map_.end(), "invalid to index space");
+    //clog_assert(titr != index_space_map_.end(), "invalid to index space");
     const index_space_t& ti = titr->second;
 
     auto citr = adjacency_map_.find(c.index_space_id);
-    clog_assert(citr == adjacency_map_.end(),
-      "invalid adjacency info");
+    //clog_assert(citr == adjacency_map_.end(),
+    //  "invalid adjacency info");
     const adjacency_t& ci = citr->second;
 
     c.max_conn_size = fi.total_num_entities * ti.total_num_entities;
@@ -319,8 +319,8 @@ public:
       runtime_->create_logical_region(ctx_, c.index_space, c.field_space);
     attach_name(c, c.logical_region, "expanded logical region");
 
-    clog_assert(adjacency_info.color_sizes.size() == num_colors_,
-      "mismatch in color sizes");
+    //clog_assert(adjacency_info.color_sizes.size() == num_colors_,
+    //  "mismatch in color sizes");
 
     DomainColoring color_partitioning;
     for(size_t color = 0; color < num_colors_; ++color){
@@ -356,8 +356,8 @@ public:
       index_space_t& is = itr.second;
 
       auto citr = indexed_coloring_info_map.find(is.index_space_id);
-      clog_assert(citr != indexed_coloring_info_map.end(),
-        "invalid index space");
+      //clog_assert(citr != indexed_coloring_info_map.end(),
+      //  "invalid index space");
       const coloring_info_map_t& coloring_info_map = citr->second;
 
       FieldAllocator allocator = 
@@ -385,7 +385,7 @@ public:
       DomainColoring color_partitioning;
       for(int color = 0; color < num_colors_; color++){
         auto citr = coloring_info_map.find(color);
-        clog_assert(citr != coloring_info_map.end(), "invalid color info");
+        //clog_assert(citr != coloring_info_map.end(), "invalid color info");
         const coloring_info_t& color_info = citr->second;
 
         Rect<2> subrect(
@@ -437,7 +437,7 @@ public:
   const
   {
     auto itr = index_space_map_.find(index_space_id);
-    clog_assert(itr != index_space_map_.end(), "invalid index space");
+    //clog_assert(itr != index_space_map_.end(), "invalid index space");
     return itr->second;
   }
 
@@ -455,7 +455,7 @@ public:
   const
   {
     auto itr = adjacency_map_.find(index_space_id);
-    clog_assert(itr != adjacency_map_.end(), "invalid adjacency");
+    //clog_assert(itr != adjacency_map_.end(), "invalid adjacency");
     return itr->second;
   }
 
@@ -500,7 +500,7 @@ public:
     context_t & context = context_t::instance();
 
     auto itr = adjacency_map_.find(index_space_id);
-    clog_assert(itr != adjacency_map_.end(), "invalid adjacency");
+    //clog_assert(itr != adjacency_map_.end(), "invalid adjacency");
     adjacency_t& c = itr->second;
     index_space_t& iis = index_space_map_[c.from_index_space_id];
 
