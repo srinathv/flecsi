@@ -22,6 +22,7 @@ set(execution_HEADERS
   common/launch.h
   common/processor.h
   common/execution_state.h
+  common/internal_index_space.h
   context.h
   default_driver.h
   execution.h

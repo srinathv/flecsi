@@ -29,6 +29,7 @@ set(topology_HEADERS
   tree_topology.h
   mesh_storage.h
   entity_storage.h
+  partition.h
 )
 
 #------------------------------------------------------------------------------#

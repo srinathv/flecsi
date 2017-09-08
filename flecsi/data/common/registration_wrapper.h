@@ -23,7 +23,7 @@
 #include "flecsi/utils/hash.h"
 #include "flecsi/utils/tuple_walker.h"
 #include "flecsi/utils/common.h"
-#include "flecsi/execution/legion/internal_index_space.h"
+#include "flecsi/execution/common/internal_index_space.h"
 
 //clog_register_tag(registration);
 
