@@ -370,9 +370,11 @@ namespace execution {
         size_t index_space;
         size_t num_owners;
         size_t owners[8];
+        size_t owner_regions[8];
       };
 
       struct args_t {
+        size_t num_index_spaces;
         index_space_t index_spaces[32];
       };
 
@@ -381,6 +383,17 @@ namespace execution {
       args_t args;
 
       auto& flecsi_context = context_t::instance();
+
+      struct shared_region_info{
+        std::set<Legion::FieldID> fids;
+        size_t region;
+        Legion::LogicalRegion lr;
+        Legion::LogicalRegion color_lr;
+      };
+
+      std::map<Legion::LogicalRegion, shared_region_info> rm;
+
+      size_t num_regions = region_info_map.size();
 
       for(auto& itr : region_info_map){
         size_t index_space = itr.first;
@@ -396,14 +409,24 @@ namespace execution {
           sizeof(size_t) * args.index_spaces[i].num_owners);
 
         for (size_t owner = 0; owner < ri.owners.size(); owner++){
-          Legion::RegionRequirement
-            rr_shared(ri.shared_lrs[owner], READ_ONLY, EXCLUSIVE,
-            ri.shared_lrs[owner]);
-       
-          for(auto fid : ri.fids)
-            rr_shared.add_field(fid);
+          Legion::LogicalRegion ro = ri.shared_lrs[owner];
 
-          launcher.add_region_requirement(rr_shared);
+          auto ritr = rm.find(ro);
+          if(ritr == rm.end()){
+            shared_region_info si;
+            si.region = num_regions + rm.size();
+            si.fids.insert(ri.fids.begin(), ri.fids.end());
+            si.lr = ro;
+            si.color_lr = ri.color_lr;
+            rm[ro] = si;
+            args.index_spaces[i].owner_regions[owner] = si.region;
+          }
+          else{
+            args.index_spaces[i].owner_regions[owner] = ritr->second.region;
+            for(auto fid : ri.fids){
+              ritr->second.fids.insert(fid);
+            }
+          }
         }//end owner 
 
         Legion::RegionRequirement rr_ghost(ri.ghost_lr,
@@ -415,22 +438,37 @@ namespace execution {
         rr_ghost.add_field(ghost_owner_pos_fid);
 
         for(auto fid : ri.fids){
-         //   rr_shared.add_field(fid);
-            rr_ghost.add_field(fid);          
+          rr_ghost.add_field(fid);          
         }
 
-         launcher.add_future(Legion::Future::from_value(runtime,
-            *(ri.global_to_local_color_map_ptr)));
+        launcher.add_future(Legion::Future::from_value(runtime,
+          *(ri.global_to_local_color_map_ptr)));
 
           // Phase READ
         // launcher.add_region_requirement(rr_shared);
-         launcher.add_region_requirement(rr_ghost);
-         launcher.add_wait_barrier(ri.barrier);
+        launcher.add_region_requirement(rr_ghost);
+        launcher.add_wait_barrier(ri.barrier);
 
-          // Phase WRITE
+        // Phase WRITE
 
-          launcher.add_arrival_barrier(ri.barrier);
-          ++i;
+        launcher.add_arrival_barrier(ri.barrier);
+        ++i;
+       }
+
+       std::map<size_t, shared_region_info> nm;
+       for(auto& itr : rm){
+         nm[itr.second.region] = std::move(itr.second);
+       }
+
+       for(auto& itr : nm){
+         Legion::RegionRequirement rr_shared(itr.second.lr,
+           READ_ONLY, EXCLUSIVE, itr.second.color_lr);
+
+         for(auto fid : itr.second.fids){
+           rr_shared.add_field(fid);
+         }
+
+         launcher.add_region_requirement(rr_shared);
        }
 
       // TODO - circular dependency including internal_task.h
