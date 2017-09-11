@@ -388,7 +388,7 @@ namespace execution {
         std::set<Legion::FieldID> fids;
         size_t region;
         Legion::LogicalRegion lr;
-        Legion::LogicalRegion color_lr;
+        bool used = false;
       };
 
       std::map<Legion::LogicalRegion, shared_region_info> rm;
@@ -396,9 +396,13 @@ namespace execution {
       size_t num_regions = region_info_map.size();
 
       for(auto& itr : region_info_map){
+        region_info_t& ri = itr.second;
         size_t index_space = itr.first;
 
-        region_info_t& ri = itr.second;
+        shared_region_info si;
+        si.region = i;
+        si.lr = itr.second.color_lr;
+        rm[si.lr] = si;
 
         args.index_spaces[i].data_client_hash = ri.data_client_hash;
         args.index_spaces[i].index_space = itr.first;
@@ -417,11 +421,12 @@ namespace execution {
             si.region = num_regions + rm.size();
             si.fids.insert(ri.fids.begin(), ri.fids.end());
             si.lr = ro;
-            si.color_lr = ri.color_lr;
+            si.used = true;
             rm[ro] = si;
             args.index_spaces[i].owner_regions[owner] = si.region;
           }
           else{
+            ritr->second.used = true;
             args.index_spaces[i].owner_regions[owner] = ritr->second.region;
             for(auto fid : ri.fids){
               ritr->second.fids.insert(fid);
@@ -461,6 +466,10 @@ namespace execution {
        }
 
        for(auto& itr : nm){
+        if(!itr.second.used || itr.second.region < num_regions){
+          continue;
+        }
+
          Legion::RegionRequirement rr_shared(itr.second.lr,
            READ_ONLY, EXCLUSIVE, itr.second.lr);
 
