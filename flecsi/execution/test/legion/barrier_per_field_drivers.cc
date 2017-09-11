@@ -36,6 +36,7 @@ flecsi_register_task(read_task, loc, single);
 
 void write_task(
         handle_t<size_t, flecsi::rw, flecsi::rw, flecsi::ro> cell_ID,
+        handle_t<size_t, flecsi::rw, flecsi::rw, flecsi::ro> h2,
         const int my_color, const size_t cycle, const bool delay);
 flecsi_register_task(write_task, loc, single);
 
@@ -77,23 +78,30 @@ void driver(int argc, char ** argv) {
       INDEX_ID);
   auto handle2 = flecsi_get_handle(ch, name_space,field2, size_t, dense,
       INDEX_ID);
+ 
+  size_t cycle = 1;
+  bool delay = false;
 
-  for(size_t cycle=0; cycle<3; cycle++) {
+  flecsi_execute_task(write_task, single, handle1, handle2,
+     my_color, cycle, delay);
+
+
+  for(size_t cycle=0; cycle<1; cycle++) {
     bool delay = false;
-    flecsi_execute_task(write_task, single, handle1, my_color, cycle, delay);
+//    flecsi_execute_task(write_task, single, handle1, my_color, cycle, delay);
 
-    delay = true;
-    flecsi_execute_task(write_task, single, handle2, my_color, cycle, delay);
+//    delay = true;
+//    flecsi_execute_task(write_task, single, handle2, my_color, cycle, delay);
 
-    flecsi_execute_task(read_task, single, handle2, my_color, cycle);
+//    flecsi_execute_task(read_task, single, handle2, my_color, cycle);
 
-    flecsi_execute_task(read_task, single, handle1, my_color, cycle);
+//    flecsi_execute_task(read_task, single, handle1, my_color, cycle);
 
-    flecsi_execute_task(read_task, single, handle2, my_color, cycle);
+//    flecsi_execute_task(read_task, single, handle2, my_color, cycle);
   }
 
   // Permutation test
-  bool delay = false;
+/*  bool delay = false;
   flecsi_execute_task(write_task, single, handle1, my_color, 0, delay);
   flecsi_execute_task(write_task, single, handle2, my_color, 0, delay);
   flecsi_execute_task(read_task, single, handle1, my_color, 0);
@@ -106,7 +114,7 @@ void driver(int argc, char ** argv) {
   flecsi_execute_task(write_task, single, handle1, my_color, 2, delay);
   flecsi_execute_task(read_task, single, handle1, my_color, 2);
   flecsi_execute_task(read_task, single, handle2, my_color, 1);
-
+*/
 } // driver
 
 } // namespace execution
@@ -114,6 +122,7 @@ void driver(int argc, char ** argv) {
 
 void write_task(
         handle_t<size_t, flecsi::rw, flecsi::rw, flecsi::ro> cell_ID,
+        handle_t<size_t, flecsi::rw, flecsi::rw, flecsi::ro> h2,
         const int my_color,
         const size_t cycle,
         const bool delay) {
