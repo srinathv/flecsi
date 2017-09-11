@@ -462,7 +462,7 @@ namespace execution {
 
        for(auto& itr : nm){
          Legion::RegionRequirement rr_shared(itr.second.lr,
-           READ_ONLY, EXCLUSIVE, itr.second.lr);
+           READ_ONLY, EXCLUSIVE, itr.second.color_lr);
 
          for(auto fid : itr.second.fids){
            rr_shared.add_field(fid);
