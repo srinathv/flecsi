@@ -301,6 +301,8 @@ struct legion_execution_policy_t
             task_prolog(legion_runtime, legion_context, task_launcher);
           task_prolog.walk(task_args);
 
+          task_prolog.launch_ghost_copy();
+
           // Enqueue the task.
           clog(trace) << "Execute flecsi/legion task " << KEY << " on rank " <<
               legion_runtime->find_local_MPI_rank() << std::endl;
