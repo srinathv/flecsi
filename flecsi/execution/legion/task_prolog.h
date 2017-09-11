@@ -84,7 +84,7 @@ namespace execution {
       size_t GHOST_PERMISSIONS
     >
     void
-    handle(
+    handle_old(
       data_handle__<
         T,
         EXCLUSIVE_PERMISSIONS,
@@ -235,7 +235,7 @@ namespace execution {
       size_t GHOST_PERMISSIONS
     >
     void
-    handle2(
+    handle(
       data_handle__<
         T,
         EXCLUSIVE_PERMISSIONS,
@@ -266,12 +266,15 @@ namespace execution {
            } // scope
 
            if(first){
+
+
              // Phase WRITE
              h.pbarrier_as_owner_ptr->arrive(1);
 
              // Phase WRITE
-             *(h.pbarrier_as_owner_ptr) = runtime->advance_phase_barrier(context,
-               *(h.pbarrier_as_owner_ptr));
+             *(h.pbarrier_as_owner_ptr) =
+                runtime->advance_phase_barrier(context,
+                      *(h.pbarrier_as_owner_ptr));
            }
 
            const size_t _pbp_size = h.ghost_owners_pbarriers_ptrs.size();
@@ -293,14 +296,17 @@ namespace execution {
              auto ritr = region_info_map.find({h.index_space, owner});
      
              if(ritr == region_info_map.end()){
-               ritr = region_info_map.emplace({h.index_space, owner}, region_info_t());
+               std::pair<size_t, size_t> my_pair(h.index_space, owner);
                
-               ri = &ritr->second;
+               region_info_map[my_pair]= region_info_t();
+        //       ritr = region_info_map.emplace({h.index_space, owner}, region_info_t());
+               
+               ri = &region_info_map[my_pair];
                ri->data_client_hash = h.data_client_hash;
                ri->shared_lr = h.ghost_owners_lregions[owner];
                ri->ghost_lr = h.ghost_lr;
-               ri->color_lr = h.color_lr;
-               ri->barrier = h.ghost_owners_pbarriers_ptrs[owner];
+               ri->color_lr = h.color_region;
+               ri->barrier = *(h.ghost_owners_pbarriers_ptrs[owner]);
                ri->global_to_local_color_map_ptr = 
                 h.global_to_local_color_map_ptr;
              }
@@ -402,6 +408,7 @@ namespace execution {
         launcher.add_wait_barrier(ri.barrier);
 
         // Phase WRITE
+
         launcher.add_arrival_barrier(ri.barrier);
 
          ++i;

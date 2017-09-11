@@ -307,7 +307,7 @@ __flecsi_internal_legion_task(owner_pos_compaction_task, void) {
 //! @ingroup legion-execution
 //----------------------------------------------------------------------------//
 
-__flecsi_internal_legion_task(ghost_copy_task, void) {
+__flecsi_internal_legion_task(ghost_copy_task_old, void) {
     const int my_color = runtime->find_local_MPI_rank();
 
   context_t& context = context_t::instance();
@@ -409,7 +409,7 @@ __flecsi_internal_legion_task(ghost_copy_task, void) {
   } // for fid
 } // ghost_copy_task
 
-__flecsi_internal_legion_task(ghost_copy_task2, void) {
+__flecsi_internal_legion_task(ghost_copy_task, void) {
   const int my_color = runtime->find_local_MPI_rank();
 
   context_t& context = context_t::instance();
