@@ -414,10 +414,15 @@ __flecsi_internal_legion_task(ghost_copy_task, void) {
 
   context_t& context = context_t::instance();
 
+  struct index_space_t{
+    size_t data_client_hash;
+    size_t index_space;
+    size_t num_owners;
+    size_t owners[8];
+  };
+
   struct args_t {
-    size_t data_client_hash[32];
-    size_t index_space[32];
-    size_t owner[32];
+    index_space_t index_spaces[32];
   };
 
   args_t args = *(args_t*)task->args;
@@ -457,7 +462,7 @@ __flecsi_internal_legion_task(ghost_copy_task, void) {
     for(auto fid : task->regions[i].privilege_fields){
       // Look up field info in context
       auto iitr = 
-        context.field_info_map().find({args.data_client_hash[index_space_num], args.index_space[index_space_num]});
+        context.field_info_map().find({args.index_spaces[index_space_num].data_client_hash, args.index_spaces[index_space_num].index_space});
       clog_assert(iitr != context.field_info_map().end(), "invalid index space");
       auto fitr = iitr->second.find(fid);
       clog_assert(fitr != iitr->second.end(), "invalid fid");
@@ -470,6 +475,7 @@ __flecsi_internal_legion_task(ghost_copy_task, void) {
         reinterpret_cast<uint8_t *>(acc_shared.template raw_rect_ptr<2>(
           owner_rect, owner_sub_rect, byte_offset));
 
+      /*
       {
       clog_tag_guard(legion_tasks);
       clog(trace) << "my_color = " << my_color << " owner lid = " <<
@@ -477,6 +483,7 @@ __flecsi_internal_legion_task(ghost_copy_task, void) {
               owner_rect.lo[0] << "," << owner_rect.lo[1] << " to " <<
               owner_rect.hi[0] << "," << owner_rect.hi[1] << std::endl;
       }
+      */
 
       uint8_t * ghost_data =
         reinterpret_cast<uint8_t *>(acc_ghost.template raw_rect_ptr<2>(
@@ -491,15 +498,21 @@ __flecsi_internal_legion_task(ghost_copy_task, void) {
                 "," << ghost_ref.x[1] << std::endl;
         }
 
-        if(owner_map[ghost_ref.x[0]] == args.owner[index_space_num]) {
-          size_t owner_offset = ghost_ref.x[1]-owner_sub_rect.lo[1];
-          uint8_t * owner_copy_ptr =
-            data_shared + owner_offset * field_info.size;
-          size_t ghost_offset = ghost_pt;
-          uint8_t * ghost_copy_ptr =
-            ghost_data + ghost_offset * field_info.size;
-          std::memcpy(ghost_copy_ptr, owner_copy_ptr, field_info.size);
-        } // if
+        size_t num_owners = args.index_spaces[index_space_num].num_owners;
+
+        for(size_t k = 0; k < num_owners; k){
+          size_t owner = args.index_spaces[index_space_num].owners[k];
+
+          if(owner_map[ghost_ref.x[0]] == owner) {
+            size_t owner_offset = ghost_ref.x[1]-owner_sub_rect.lo[1];
+            uint8_t * owner_copy_ptr =
+              data_shared + owner_offset * field_info.size;
+            size_t ghost_offset = ghost_pt;
+            uint8_t * ghost_copy_ptr =
+              ghost_data + ghost_offset * field_info.size;
+            std::memcpy(ghost_copy_ptr, owner_copy_ptr, field_info.size);
+          } // if
+        }
       } // for ghost_itr
     } // for fid
   }

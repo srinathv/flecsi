@@ -78,34 +78,34 @@ void driver(int argc, char ** argv) {
   auto handle2 = flecsi_get_handle(ch, name_space,field2, size_t, dense,
       INDEX_ID);
 
-  for(size_t cycle=0; cycle<3; cycle++) {
+  for(size_t cycle=0; cycle<1; cycle++) {
     bool delay = false;
     flecsi_execute_task(write_task, single, handle1, my_color, cycle, delay);
 
-    delay = true;
-    flecsi_execute_task(write_task, single, handle2, my_color, cycle, delay);
+    // delay = true;
+    // flecsi_execute_task(write_task, single, handle2, my_color, cycle, delay);
 
-    flecsi_execute_task(read_task, single, handle2, my_color, cycle);
+    // flecsi_execute_task(read_task, single, handle2, my_color, cycle);
 
-    flecsi_execute_task(read_task, single, handle1, my_color, cycle);
+    // flecsi_execute_task(read_task, single, handle1, my_color, cycle);
 
-    flecsi_execute_task(read_task, single, handle2, my_color, cycle);
+    // flecsi_execute_task(read_task, single, handle2, my_color, cycle);
   }
 
   // Permutation test
   bool delay = false;
   flecsi_execute_task(write_task, single, handle1, my_color, 0, delay);
-  flecsi_execute_task(write_task, single, handle2, my_color, 0, delay);
-  flecsi_execute_task(read_task, single, handle1, my_color, 0);
-  flecsi_execute_task(read_task, single, handle2, my_color, 0);
+  // flecsi_execute_task(write_task, single, handle2, my_color, 0, delay);
+  // flecsi_execute_task(read_task, single, handle1, my_color, 0);
+  // flecsi_execute_task(read_task, single, handle2, my_color, 0);
 
-  flecsi_execute_task(write_task, single, handle2, my_color, 1, delay);
-  flecsi_execute_task(read_task, single, handle1, my_color, 0);
-  flecsi_execute_task(read_task, single, handle2, my_color, 1);
+  // flecsi_execute_task(write_task, single, handle2, my_color, 1, delay);
+  // flecsi_execute_task(read_task, single, handle1, my_color, 0);
+  // flecsi_execute_task(read_task, single, handle2, my_color, 1);
 
-  flecsi_execute_task(write_task, single, handle1, my_color, 2, delay);
-  flecsi_execute_task(read_task, single, handle1, my_color, 2);
-  flecsi_execute_task(read_task, single, handle2, my_color, 1);
+  // flecsi_execute_task(write_task, single, handle1, my_color, 2, delay);
+  // flecsi_execute_task(read_task, single, handle1, my_color, 2);
+  // flecsi_execute_task(read_task, single, handle2, my_color, 1);
 
 } // driver
 
