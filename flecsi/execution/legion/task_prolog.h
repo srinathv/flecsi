@@ -279,11 +279,11 @@ namespace execution {
 
            const size_t _pbp_size = h.ghost_owners_pbarriers_ptrs.size();
 
-            region_info_t* ri;
+           region_info_t* ri;
 
-            auto ritr = region_info_map.find(h.index_space);
+           auto ritr = region_info_map.find(h.index_space);
        
-            if(ritr == region_info_map.end()){
+           if(ritr == region_info_map.end()){
               region_info_map[h.index_space] = region_info_t();
               ri = &region_info_map[h.index_space];
               ri->data_client_hash = h.data_client_hash;
@@ -293,10 +293,10 @@ namespace execution {
               ri->barrier = *(h.ghost_owners_pbarriers_ptrs[0]);
               ri->global_to_local_color_map_ptr = 
                h.global_to_local_color_map_ptr;
-            }
-            else{
+           }
+           else{
               ri = &ritr->second;
-            }
+           }
 
            ri->fids.push_back(h.fid);
 
@@ -455,7 +455,7 @@ namespace execution {
     struct region_info_t{
       size_t data_client_hash;
       std::vector<Legion::FieldID> fids;
-      std::vector<Legion::LogicalRegion>  shared_lrs; 
+      std::vector<Legion::LogicalRegion> shared_lrs; 
       Legion::LogicalRegion ghost_lr;
       Legion::LogicalRegion color_lr;
       Legion::PhaseBarrier   barrier; 
