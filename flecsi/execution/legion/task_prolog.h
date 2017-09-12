@@ -395,6 +395,14 @@ namespace execution {
 
       size_t num_regions = region_info_map.size();
 
+      auto constexpr key = flecsi::utils::const_string_t{
+        EXPAND_AND_STRINGIFY(ghost_copy_task)}.hash();
+
+      const auto ghost_copy_tid = flecsi_context.task_id<key>();
+
+      Legion::TaskLauncher ghost_launcher(ghost_copy_tid,
+        Legion::TaskArgument(&args, sizeof(args)));
+
       for(auto& itr : region_info_map){
         size_t index_space = itr.first;
 
@@ -441,17 +449,18 @@ namespace execution {
           rr_ghost.add_field(fid);          
         }
 
-        launcher.add_future(Legion::Future::from_value(runtime,
+        ghost_launcher.add_future(Legion::Future::from_value(runtime,
           *(ri.global_to_local_color_map_ptr)));
 
           // Phase READ
         // launcher.add_region_requirement(rr_shared);
-        launcher.add_region_requirement(rr_ghost);
-        launcher.add_wait_barrier(ri.barrier);
+        ghost_launcher.add_region_requirement(rr_ghost);
+        ghost_launcher.add_wait_barrier(ri.barrier);
+
 
         // Phase WRITE
 
-        launcher.add_arrival_barrier(ri.barrier);
+        ghost_launcher.add_arrival_barrier(ri.barrier);
         ++i;
        }
 
@@ -462,15 +471,16 @@ namespace execution {
 
        for(auto& itr : nm){
          Legion::RegionRequirement rr_shared(itr.second.lr,
-           READ_ONLY, EXCLUSIVE, itr.second.color_lr);
+           READ_ONLY, EXCLUSIVE, itr.second.lr);
 
          for(auto fid : itr.second.fids){
            rr_shared.add_field(fid);
          }
 
-         launcher.add_region_requirement(rr_shared);
+         ghost_launcher.add_region_requirement(rr_shared);
        }
 
+#if 0
       // TODO - circular dependency including internal_task.h
       auto constexpr key = flecsi::utils::const_string_t{
         EXPAND_AND_STRINGIFY(ghost_copy_task)}.hash();
@@ -479,9 +489,9 @@ namespace execution {
 
       Legion::TaskLauncher launcher(ghost_copy_tid,
         Legion::TaskArgument(&args, sizeof(args)));
-
+#endif
       // Execute the ghost copy task
-      runtime->execute_task(context, launcher);
+      runtime->execute_task(context, ghost_launcher);
 
       for(auto& itr : region_info_map){
         region_info_t& ri = itr.second;
