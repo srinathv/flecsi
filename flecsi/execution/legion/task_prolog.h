@@ -247,6 +247,20 @@ namespace execution {
       if (!h.global && !h.color){
          auto& flecsi_context = context_t::instance();
 
+         auto iitr = flecsi_context.field_info_map().find(
+           { h.data_client_hash, h.index_space });
+
+         clog_assert(iitr != flecsi_context.field_info_map().end(),
+           "invalid index space");
+
+
+         for(auto& fitr: iitr->second) {
+           const context_t::field_info_t & fi = fitr.second;
+           if(fi.fid == h.fid && utils::hash::is_internal(fi.key)){
+             return;
+           }
+         } // for
+
          bool read_phase = false;
          bool write_phase = false;
          const int my_color = runtime->find_local_MPI_rank();
@@ -267,7 +281,7 @@ namespace execution {
            } // scope
            */
 
-           if(first){
+           {
              // Phase WRITE
              h.pbarrier_as_owner_ptr->arrive(1);
 
@@ -290,7 +304,6 @@ namespace execution {
               ri->shared_lrs = h.ghost_owners_lregions;
               ri->ghost_lr = h.ghost_lr;
               ri->color_lr = h.color_region;
-              ri->barrier = *(h.ghost_owners_pbarriers_ptrs[0]);
               ri->global_to_local_color_map_ptr = 
                h.global_to_local_color_map_ptr;
            }
@@ -298,12 +311,16 @@ namespace execution {
               ri = &ritr->second;
            }
 
+           //   if(!utils::hash::is_internal(fi.key)){
+           //     rr_shared.add_field(fi.fid);
+           //     rr_ghost.add_field(fi.fid);
+
            ri->fids.push_back(h.fid);
 
            // As user
            for(size_t owner{0}; owner<_pbp_size; owner++) {
-
              ri->owners.push_back(owner);
+             ri->barriers.push_back((h.ghost_owners_pbarriers_ptrs[owner]));
 
             /*
              {
@@ -316,18 +333,13 @@ namespace execution {
              } // scope
              */
 
-/*             if(first){
-               // Phase WRITE
-               *(h.ghost_owners_pbarriers_ptrs[owner]) =
-                 runtime->advance_phase_barrier(context,
-                 *(h.ghost_owners_pbarriers_ptrs[owner]));
-                 first = false;
+{
              }
-*/
+
            } // for
          } // read_phase
 
-         if(write_phase && first) {
+         if(write_phase) {
            {
            clog_tag_guard(prolog);
            clog(trace) << "rank " << runtime->find_local_MPI_rank() <<
@@ -389,6 +401,7 @@ namespace execution {
         size_t region;
         Legion::LogicalRegion lr;
         Legion::LogicalRegion color_lr;
+        Legion::PhaseBarrier* barrier; 
       };
 
       std::map<Legion::LogicalRegion, shared_region_info> rm;
@@ -418,6 +431,7 @@ namespace execution {
             si.fids.insert(ri.fids.begin(), ri.fids.end());
             si.lr = ro;
             si.color_lr = ri.color_lr;
+            si.barrier = ri.barriers[owner];
             rm[ro] = si;
             args.index_spaces[i].owner_regions[owner] = si.region;
           }
@@ -428,7 +442,7 @@ namespace execution {
             }
           }
         }//end owner 
-
+/*
         Legion::RegionRequirement rr_ghost(ri.ghost_lr,
             WRITE_DISCARD, EXCLUSIVE, ri.color_lr);
 
@@ -440,18 +454,10 @@ namespace execution {
         for(auto fid : ri.fids){
           rr_ghost.add_field(fid);          
         }
-
+        */
         launcher.add_future(Legion::Future::from_value(runtime,
           *(ri.global_to_local_color_map_ptr)));
 
-          // Phase READ
-        // launcher.add_region_requirement(rr_shared);
-        launcher.add_region_requirement(rr_ghost);
-        launcher.add_wait_barrier(ri.barrier);
-
-        // Phase WRITE
-
-        launcher.add_arrival_barrier(ri.barrier);
         ++i;
        }
 
@@ -461,6 +467,16 @@ namespace execution {
        }
 
        for(auto& itr : nm){
+          // Phase READ
+        // launcher.add_region_requirement(rr_shared);
+        //launcher.add_region_requirement(rr_ghost);
+        launcher.add_wait_barrier(*itr.second.barrier);
+
+        // Phase WRITE
+
+        launcher.add_arrival_barrier(*itr.second.barrier);
+
+        /*
          Legion::RegionRequirement rr_shared(itr.second.lr,
            READ_ONLY, EXCLUSIVE, itr.second.color_lr);
 
@@ -469,6 +485,12 @@ namespace execution {
          }
 
          launcher.add_region_requirement(rr_shared);
+         */
+               // Phase WRITE
+               *(itr.second.barrier) =
+                 runtime->advance_phase_barrier(context,
+                 *(itr.second.barrier));
+                
        }
 
       // TODO - circular dependency including internal_task.h
@@ -477,17 +499,19 @@ namespace execution {
 
       const auto ghost_copy_tid = flecsi_context.task_id<key>();
 
-      Legion::TaskLauncher launcher(ghost_copy_tid,
+      Legion::TaskLauncher launcher2(ghost_copy_tid,
         Legion::TaskArgument(&args, sizeof(args)));
 
       // Execute the ghost copy task
-      runtime->execute_task(context, launcher);
+      runtime->execute_task(context, launcher2);
 
+      /* need?
       for(auto& itr : region_info_map){
         region_info_t& ri = itr.second;
         ri.barrier = runtime->advance_phase_barrier(context,
                  ri.barrier);
       }//for
+      */
     }
 
     struct region_info_t{
@@ -496,7 +520,7 @@ namespace execution {
       std::vector<Legion::LogicalRegion> shared_lrs; 
       Legion::LogicalRegion ghost_lr;
       Legion::LogicalRegion color_lr;
-      Legion::PhaseBarrier   barrier; 
+      std::vector<Legion::PhaseBarrier*> barriers; 
       const Legion::STL::map<LegionRuntime::Arrays::coord_t,
         LegionRuntime::Arrays::coord_t>* global_to_local_color_map_ptr;
       std::vector<size_t> owners;
