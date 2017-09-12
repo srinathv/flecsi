@@ -448,6 +448,7 @@ namespace execution {
         for(auto fid : ri.fids){
           rr_ghost.add_field(fid);          
         }
+       
 
         ghost_launcher.add_future(Legion::Future::from_value(runtime,
           *(ri.global_to_local_color_map_ptr)));
@@ -463,6 +464,7 @@ namespace execution {
         ghost_launcher.add_arrival_barrier(ri.barrier);
         ++i;
        }
+       args.num_index_spaces=region_info_map.size();
 
        std::map<size_t, shared_region_info> nm;
        for(auto& itr : rm){
