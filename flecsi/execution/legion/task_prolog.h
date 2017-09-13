@@ -478,10 +478,10 @@ namespace execution {
 
        for(auto& itr : nm){
         // Phase READ
-        launcher.add_wait_barrier(*itr.second.barrier);
+        ghost_launcher.add_wait_barrier(*itr.second.barrier);
 
         // Phase WRITE
-        launcher.add_arrival_barrier(*itr.second.barrier);
+        ghost_launcher.add_arrival_barrier(*itr.second.barrier);
 
          Legion::RegionRequirement rr_shared(itr.second.lr,
            READ_ONLY, EXCLUSIVE, itr.second.lr);
