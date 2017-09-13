@@ -288,6 +288,7 @@ namespace execution {
               ri = &region_info_map[h.index_space];
               ri->data_client_hash = h.data_client_hash;
               ri->shared_lrs = h.ghost_owners_lregions;
+              ri->num_owners = _pbp_size;
               ri->ghost_lr = h.ghost_lr;
               ri->color_lr = h.color_region;
               ri->barrier = *(h.ghost_owners_pbarriers_ptrs[0]);
@@ -416,7 +417,7 @@ namespace execution {
         std::memcpy(args.index_spaces[i].owners, &ri.owners[0],
           sizeof(size_t) * args.index_spaces[i].num_owners);
 
-        for (size_t owner = 0; owner < ri.owners.size(); owner++){
+        for (size_t owner = 0; owner < ri.num_owners; owner++){
           Legion::LogicalRegion ro = ri.shared_lrs[owner];
 
           auto ritr = rm.find(ro);
@@ -505,7 +506,8 @@ namespace execution {
     struct region_info_t{
       size_t data_client_hash;
       std::vector<Legion::FieldID> fids;
-      std::vector<Legion::LogicalRegion> shared_lrs; 
+      std::vector<Legion::LogicalRegion> shared_lrs;
+      size_t num_owners; 
       Legion::LogicalRegion ghost_lr;
       Legion::LogicalRegion color_lr;
       Legion::PhaseBarrier   barrier; 
