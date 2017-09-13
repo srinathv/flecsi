@@ -634,9 +634,7 @@ struct legion_context_policy_t
       legion_context, max_reduction
     );
 
-    auto global_max_ = global_future.get_result<double>();
-
-    return global_max_;
+    return legion_future__<T>(global_future);
   }
 
 
@@ -687,9 +685,7 @@ struct legion_context_policy_t
       legion_context, min_reduction
     );
 
-    auto global_min_ = global_future.get_result<double>();
-
-    return global_min_;
+    return legion_future__<T>(global_future);
   }
 
   //--------------------------------------------------------------------------//
