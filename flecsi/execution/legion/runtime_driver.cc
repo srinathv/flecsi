@@ -892,6 +892,11 @@ spmd_task(
     owners_subregions_launcher.add_future(Legion::Future::from_value(runtime,
             ispace_dmap[idx_space].global_to_local_color_map));
 
+    owners_subregions_launcher.add_region_requirement(
+        Legion::RegionRequirement(ispace_dmap[idx_space].ghost_lr, READ_ONLY,
+            EXCLUSIVE, ispace_dmap[idx_space].color_region)
+        .add_field(ghost_owner_pos_fid));
+
     runtime->execute_task(ctx, owners_subregions_launcher);
 
     consecutive_index++;

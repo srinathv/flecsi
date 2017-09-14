@@ -420,10 +420,10 @@ __flecsi_internal_legion_task(owners_subregions_task, void) {
     clog(error) << "rank " << my_color << " owners_subregions_task" << std::endl;
 
 
-    //clog_assert(regions.size() == 1, "owners_subregions_task requires 1 region");
-    //clog_assert(task->regions.size() == 1, "owners_subregions_task requires 1 region");
-    //clog_assert(task->regions[0].privilege_fields.size() == 1,
-    // "owners_subregions_task only requires ghost_owner_pos_fid");
+    clog_assert(regions.size() == 1, "owners_subregions_task requires 1 region");
+    clog_assert(task->regions.size() == 1, "owners_subregions_task requires 1 region");
+    clog_assert(task->regions[0].privilege_fields.size() == 1,
+     "owners_subregions_task only requires ghost_owner_pos_fid");
 
     legion_map owner_map = task->futures[0].get_result<legion_map>();
 
@@ -437,6 +437,23 @@ __flecsi_internal_legion_task(owners_subregions_task, void) {
     auto ghost_owner_pos_fid =
       LegionRuntime::HighLevel::FieldID(internal_field::ghost_owner_pos);
 
+    auto position_ref_acc =
+      regions[0].get_field_accessor(ghost_owner_pos_fid).typeify<
+      LegionRuntime::Arrays::Point<2>>();
+
+    Legion::Domain ghost_domain = runtime->get_index_space_domain(ctx,
+            regions[0].get_logical_region().get_index_space());
+
+    LegionRuntime::Arrays::Rect<2> ghost_rect = ghost_domain.get_rect<2>();
+    LegionRuntime::Arrays::Rect<2> ghost_sub_rect;
+    LegionRuntime::Accessor::ByteOffset byte_offset[2];
+
+    LegionRuntime::Arrays::Point<2>* position_ref_data =
+      reinterpret_cast<LegionRuntime::Arrays::Point<2>*>(position_ref_acc.template raw_rect_ptr<2>(
+        ghost_rect, ghost_sub_rect, byte_offset));
+    size_t position_max = ghost_rect.hi[1] - ghost_rect.lo[1] + 1;
+
+    clog(error) << "rank " << my_color << " : " << position_max << " ghost points " << std::endl;
 #if 0
   context_t& context = context_t::instance();
 
@@ -448,25 +465,6 @@ __flecsi_internal_legion_task(owners_subregions_task, void) {
   args_t args = *(args_t*)task->args;
 
 
-  auto position_ref_acc =
-    regions[1].get_field_accessor(ghost_owner_pos_fid).typeify<
-    LegionRuntime::Arrays::Point<2>>();
-
-  Legion::Domain owner_domain = runtime->get_index_space_domain(ctx,
-          regions[0].get_logical_region().get_index_space());
-  Legion::Domain ghost_domain = runtime->get_index_space_domain(ctx,
-          regions[1].get_logical_region().get_index_space());
-
-  LegionRuntime::Arrays::Rect<2> owner_rect = owner_domain.get_rect<2>();
-  LegionRuntime::Arrays::Rect<2> ghost_rect = ghost_domain.get_rect<2>();
-  LegionRuntime::Arrays::Rect<2> owner_sub_rect;
-  LegionRuntime::Arrays::Rect<2> ghost_sub_rect;
-  LegionRuntime::Accessor::ByteOffset byte_offset[2];
-
-  LegionRuntime::Arrays::Point<2>* position_ref_data =
-    reinterpret_cast<LegionRuntime::Arrays::Point<2>*>(position_ref_acc.template raw_rect_ptr<2>(
-      ghost_rect, ghost_sub_rect, byte_offset));
-  size_t position_max = ghost_rect.hi[1] - ghost_rect.lo[1] + 1;
 
   // For each field, copy data from shared to ghost
   for(auto fid : task->regions[0].privilege_fields){
