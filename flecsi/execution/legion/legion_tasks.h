@@ -427,6 +427,16 @@ __flecsi_internal_legion_task(owners_subregions_task, void) {
 
     legion_map owner_map = task->futures[0].get_result<legion_map>();
 
+    for(auto itr = owner_map.begin(); itr != owner_map.end(); itr++)
+        {
+        clog_tag_guard(legion_tasks);
+        clog(error) << "my_color= " << my_color << " gid " << itr->first <<
+          " maps to lid " << itr->second << std::endl;
+        }
+
+    auto ghost_owner_pos_fid =
+      LegionRuntime::HighLevel::FieldID(internal_field::ghost_owner_pos);
+
 #if 0
   context_t& context = context_t::instance();
 
@@ -437,16 +447,6 @@ __flecsi_internal_legion_task(owners_subregions_task, void) {
   };
   args_t args = *(args_t*)task->args;
 
-  for(auto itr = owner_map.begin(); itr != owner_map.end(); itr++)
-      {
-      clog_tag_guard(legion_tasks);
-      clog(trace) << "my_color= " << my_color << " gid " << itr->first <<
-        " maps to lid " << itr->second << " current owner lid is " <<
-        args.owner << std::endl;
-      }
-
-  auto ghost_owner_pos_fid =
-    LegionRuntime::HighLevel::FieldID(internal_field::ghost_owner_pos);
 
   auto position_ref_acc =
     regions[1].get_field_accessor(ghost_owner_pos_fid).typeify<
