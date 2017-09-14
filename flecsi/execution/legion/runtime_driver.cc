@@ -884,6 +884,16 @@ spmd_task(
 
     runtime->execute_task(ctx, fix_ghost_refs_launcher);
 
+    // Find subrects from each owner that I must copy in ghost_copy_task
+    Legion::TaskLauncher owners_subregions_launcher(context_.task_id<
+      __flecsi_internal_task_key(owners_subregions_task)>(),
+      Legion::TaskArgument(nullptr, 0));
+
+    owners_subregions_launcher.add_future(Legion::Future::from_value(runtime,
+            ispace_dmap[idx_space].global_to_local_color_map));
+
+    runtime->execute_task(ctx, owners_subregions_launcher);
+
     consecutive_index++;
   } // for idx_space
   

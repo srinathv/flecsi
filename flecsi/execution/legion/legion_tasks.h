@@ -410,6 +410,117 @@ __flecsi_internal_legion_task(ghost_copy_task, void) {
 } // ghost_copy_task
 
 //----------------------------------------------------------------------------//
+//! Owners subregions task returns subrects required from every neighbor
+//!
+//! @ingroup legion-execution
+//----------------------------------------------------------------------------//
+
+__flecsi_internal_legion_task(owners_subregions_task, void) {
+    const int my_color = runtime->find_local_MPI_rank();
+    clog(error) << "rank " << my_color << " owners_subregions_task" << std::endl;
+
+
+    //clog_assert(regions.size() == 1, "owners_subregions_task requires 1 region");
+    //clog_assert(task->regions.size() == 1, "owners_subregions_task requires 1 region");
+    //clog_assert(task->regions[0].privilege_fields.size() == 1,
+    // "owners_subregions_task only requires ghost_owner_pos_fid");
+
+    legion_map owner_map = task->futures[0].get_result<legion_map>();
+
+#if 0
+  context_t& context = context_t::instance();
+
+  struct args_t {
+    size_t data_client_hash;
+    size_t index_space;
+    size_t owner;
+  };
+  args_t args = *(args_t*)task->args;
+
+  for(auto itr = owner_map.begin(); itr != owner_map.end(); itr++)
+      {
+      clog_tag_guard(legion_tasks);
+      clog(trace) << "my_color= " << my_color << " gid " << itr->first <<
+        " maps to lid " << itr->second << " current owner lid is " <<
+        args.owner << std::endl;
+      }
+
+  auto ghost_owner_pos_fid =
+    LegionRuntime::HighLevel::FieldID(internal_field::ghost_owner_pos);
+
+  auto position_ref_acc =
+    regions[1].get_field_accessor(ghost_owner_pos_fid).typeify<
+    LegionRuntime::Arrays::Point<2>>();
+
+  Legion::Domain owner_domain = runtime->get_index_space_domain(ctx,
+          regions[0].get_logical_region().get_index_space());
+  Legion::Domain ghost_domain = runtime->get_index_space_domain(ctx,
+          regions[1].get_logical_region().get_index_space());
+
+  LegionRuntime::Arrays::Rect<2> owner_rect = owner_domain.get_rect<2>();
+  LegionRuntime::Arrays::Rect<2> ghost_rect = ghost_domain.get_rect<2>();
+  LegionRuntime::Arrays::Rect<2> owner_sub_rect;
+  LegionRuntime::Arrays::Rect<2> ghost_sub_rect;
+  LegionRuntime::Accessor::ByteOffset byte_offset[2];
+
+  LegionRuntime::Arrays::Point<2>* position_ref_data =
+    reinterpret_cast<LegionRuntime::Arrays::Point<2>*>(position_ref_acc.template raw_rect_ptr<2>(
+      ghost_rect, ghost_sub_rect, byte_offset));
+  size_t position_max = ghost_rect.hi[1] - ghost_rect.lo[1] + 1;
+
+  // For each field, copy data from shared to ghost
+  for(auto fid : task->regions[0].privilege_fields){
+    // Look up field info in context
+    auto iitr =
+      context.field_info_map().find({args.data_client_hash, args.index_space});
+    clog_assert(iitr != context.field_info_map().end(), "invalid index space");
+    auto fitr = iitr->second.find(fid);
+    clog_assert(fitr != iitr->second.end(), "invalid fid");
+    const context_t::field_info_t& field_info = fitr->second;
+
+    auto acc_shared = regions[0].get_field_accessor(fid);
+    auto acc_ghost = regions[1].get_field_accessor(fid);
+
+    uint8_t * data_shared =
+      reinterpret_cast<uint8_t *>(acc_shared.template raw_rect_ptr<2>(
+        owner_rect, owner_sub_rect, byte_offset));
+
+    {
+    clog_tag_guard(legion_tasks);
+    clog(trace) << "my_color = " << my_color << " owner lid = " <<
+            args.owner << " owner rect = " <<
+            owner_rect.lo[0] << "," << owner_rect.lo[1] << " to " <<
+            owner_rect.hi[0] << "," << owner_rect.hi[1] << std::endl;
+    }
+
+    uint8_t * ghost_data =
+      reinterpret_cast<uint8_t *>(acc_ghost.template raw_rect_ptr<2>(
+        ghost_rect, ghost_sub_rect, byte_offset));
+
+    for(size_t ghost_pt = 0; ghost_pt < position_max; ghost_pt++) {
+      LegionRuntime::Arrays::Point<2> ghost_ref = position_ref_data[ghost_pt];
+
+      {
+      clog_tag_guard(legion_tasks);
+      clog(trace) << my_color << " copy from position " << ghost_ref.x[0] <<
+              "," << ghost_ref.x[1] << std::endl;
+      }
+
+      if(owner_map[ghost_ref.x[0]] == args.owner) {
+        size_t owner_offset = ghost_ref.x[1]-owner_sub_rect.lo[1];
+        uint8_t * owner_copy_ptr =
+          data_shared + owner_offset * field_info.size;
+        size_t ghost_offset = ghost_pt;
+        uint8_t * ghost_copy_ptr =
+          ghost_data + ghost_offset * field_info.size;
+        std::memcpy(ghost_copy_ptr, owner_copy_ptr, field_info.size);
+      } // if
+    } // for ghost_itr
+  } // for fid
+#endif
+} // owners_subregions
+
+//----------------------------------------------------------------------------//
 //! Fill connectivity task fills connectivity for from/to index space and
 //! and index launched.
 //!
