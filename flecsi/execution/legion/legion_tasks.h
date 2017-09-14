@@ -415,7 +415,8 @@ __flecsi_internal_legion_task(ghost_copy_task, void) {
 //! @ingroup legion-execution
 //----------------------------------------------------------------------------//
 
-__flecsi_internal_legion_task(owners_subregions_task, void) {
+__flecsi_internal_legion_task(owners_subregions_task,
+    double) {
     const int my_color = runtime->find_local_MPI_rank();
     clog(error) << "rank " << my_color << " owners_subregions_task" << std::endl;
 
@@ -476,54 +477,20 @@ __flecsi_internal_legion_task(owners_subregions_task, void) {
         clog(error) << my_color << " fit " << ghost_ref.x[1] << " in " <<
             lid_to_subrect_map[lid].lo[1] << " to " <<
             lid_to_subrect_map[lid].hi[1] << std::endl;
+        if (ghost_ref.x[1] < lid_to_subrect_map[lid].lo[1]) {
+          LegionRuntime::Arrays::Rect<2> new_rect(ghost_ref, lid_to_subrect_map[lid].hi);
+          lid_to_subrect_map[lid] = new_rect;
+        } else if (ghost_ref.x[1] > lid_to_subrect_map[lid].hi[1]) {
+          LegionRuntime::Arrays::Rect<2> new_rect(lid_to_subrect_map[lid].lo, ghost_ref);
+          lid_to_subrect_map[lid] = new_rect;
+        }
       } // if itr == end
       } // scope
 
     } // for ghost_pt
 
-    #if 0
-  context_t& context = context_t::instance();
-
-  struct args_t {
-    size_t data_client_hash;
-    size_t index_space;
-    size_t owner;
-  };
-  args_t args = *(args_t*)task->args;
-
-
-
-  // For each field, copy data from shared to ghost
-  for(auto fid : task->regions[0].privilege_fields){
-    // Look up field info in context
-    auto iitr =
-      context.field_info_map().find({args.data_client_hash, args.index_space});
-    clog_assert(iitr != context.field_info_map().end(), "invalid index space");
-    auto fitr = iitr->second.find(fid);
-    clog_assert(fitr != iitr->second.end(), "invalid fid");
-    const context_t::field_info_t& field_info = fitr->second;
-
-    auto acc_shared = regions[0].get_field_accessor(fid);
-    auto acc_ghost = regions[1].get_field_accessor(fid);
-
-    uint8_t * data_shared =
-      reinterpret_cast<uint8_t *>(acc_shared.template raw_rect_ptr<2>(
-        owner_rect, owner_sub_rect, byte_offset));
-
-    {
-    clog_tag_guard(legion_tasks);
-    clog(trace) << "my_color = " << my_color << " owner lid = " <<
-            args.owner << " owner rect = " <<
-            owner_rect.lo[0] << "," << owner_rect.lo[1] << " to " <<
-            owner_rect.hi[0] << "," << owner_rect.hi[1] << std::endl;
-    }
-
-    uint8_t * ghost_data =
-      reinterpret_cast<uint8_t *>(acc_ghost.template raw_rect_ptr<2>(
-        ghost_rect, ghost_sub_rect, byte_offset));
-
-  } // for fid
-#endif
+    //return lid_to_subrect_map;
+    return 1.0;
 } // owners_subregions
 
 //----------------------------------------------------------------------------//
