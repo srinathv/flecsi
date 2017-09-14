@@ -897,7 +897,13 @@ spmd_task(
             EXCLUSIVE, ispace_dmap[idx_space].color_region)
         .add_field(ghost_owner_pos_fid));
 
-    runtime->execute_task(ctx, owners_subregions_launcher);
+    Legion::Future owner_to_subrect_future =
+        runtime->execute_task(ctx, owners_subregions_launcher);
+
+    bool silence_warnings = true;   // more efficient to defer this to just
+                                    // before calling driver, but this is
+                                    // only a one-time setup
+    clog(error) << my_color << " returns value " << owner_to_subrect_future.get_result<double>(silence_warnings);
 
     consecutive_index++;
   } // for idx_space
