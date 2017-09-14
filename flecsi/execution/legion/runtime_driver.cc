@@ -906,6 +906,14 @@ spmd_task(
     subrect_map owner_to_subrect_map =
         owner_to_subrect_future.get_result<subrect_map>(silence_warnings);
 
+    for(auto owner_itr=owner_to_subrect_map.begin();
+        owner_itr!=owner_to_subrect_map.end(); owner_itr++) {
+      LegionRuntime::Arrays::Rect<2> sub_rect = owner_itr->second;
+      clog(error) << my_color << " lid " << owner_itr->first <<
+          " : " << sub_rect.lo[0] << " , " << sub_rect.lo[1] <<
+          " to " << sub_rect.hi[0] << " , " << sub_rect.hi[1] << std::endl;
+    } //owner_itr
+
     consecutive_index++;
   } // for idx_space
   
