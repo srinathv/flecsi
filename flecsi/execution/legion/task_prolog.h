@@ -422,7 +422,7 @@ namespace execution {
         args.index_spaces[i].data_client_hash = ri.data_client_hash;
         args.index_spaces[i].index_space = itr.first;
 
-        args.index_spaces[i].num_owners = ri.owners.size();
+        args.index_spaces[i].num_owners = ri.num_owners;
 
         std::memcpy(args.index_spaces[i].owners, &ri.owners[0],
           sizeof(size_t) * args.index_spaces[i].num_owners);
