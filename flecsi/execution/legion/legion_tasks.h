@@ -405,7 +405,7 @@ __flecsi_internal_legion_task(ghost_copy_task, void) {
           ghost_data + ghost_offset * field_info.size;
         std::memcpy(ghost_copy_ptr, owner_copy_ptr, field_info.size);
       } // if
-    } // for ghost_itr
+    } // for ghost_pt
   } // for fid
 } // ghost_copy_task
 
@@ -454,7 +454,34 @@ __flecsi_internal_legion_task(owners_subregions_task, void) {
     size_t position_max = ghost_rect.hi[1] - ghost_rect.lo[1] + 1;
 
     clog(error) << "rank " << my_color << " : " << position_max << " ghost points " << std::endl;
-#if 0
+
+    Legion::STL::map<size_t, LegionRuntime::Arrays::Rect<2>> lid_to_subrect_map;
+
+    for(size_t ghost_pt = 0; ghost_pt < position_max; ghost_pt++) {
+      LegionRuntime::Arrays::Point<2> ghost_ref = position_ref_data[ghost_pt];
+
+      {
+      clog_tag_guard(legion_tasks);
+      size_t lid = owner_map[ghost_ref.x[0]];
+      clog(error) << my_color << " copy from position " << ghost_ref.x[0] <<
+              "," << ghost_ref.x[1] <<
+              " which is actually lid " << lid << std::endl;
+
+      auto itr = lid_to_subrect_map.find(lid);
+      if (itr == lid_to_subrect_map.end()) {
+        clog(error) << my_color << " lid " << lid << " not found in map " << std::endl;
+        LegionRuntime::Arrays::Rect<2> new_rect(ghost_ref, ghost_ref);
+        lid_to_subrect_map[lid] = new_rect;
+      } else {
+        clog(error) << my_color << " fit " << ghost_ref.x[1] << " in " <<
+            lid_to_subrect_map[lid].lo[1] << " to " <<
+            lid_to_subrect_map[lid].hi[1] << std::endl;
+      } // if itr == end
+      } // scope
+
+    } // for ghost_pt
+
+    #if 0
   context_t& context = context_t::instance();
 
   struct args_t {
@@ -495,25 +522,6 @@ __flecsi_internal_legion_task(owners_subregions_task, void) {
       reinterpret_cast<uint8_t *>(acc_ghost.template raw_rect_ptr<2>(
         ghost_rect, ghost_sub_rect, byte_offset));
 
-    for(size_t ghost_pt = 0; ghost_pt < position_max; ghost_pt++) {
-      LegionRuntime::Arrays::Point<2> ghost_ref = position_ref_data[ghost_pt];
-
-      {
-      clog_tag_guard(legion_tasks);
-      clog(trace) << my_color << " copy from position " << ghost_ref.x[0] <<
-              "," << ghost_ref.x[1] << std::endl;
-      }
-
-      if(owner_map[ghost_ref.x[0]] == args.owner) {
-        size_t owner_offset = ghost_ref.x[1]-owner_sub_rect.lo[1];
-        uint8_t * owner_copy_ptr =
-          data_shared + owner_offset * field_info.size;
-        size_t ghost_offset = ghost_pt;
-        uint8_t * ghost_copy_ptr =
-          ghost_data + ghost_offset * field_info.size;
-        std::memcpy(ghost_copy_ptr, owner_copy_ptr, field_info.size);
-      } // if
-    } // for ghost_itr
   } // for fid
 #endif
 } // owners_subregions
