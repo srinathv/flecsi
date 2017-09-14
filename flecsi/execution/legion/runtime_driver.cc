@@ -903,7 +903,8 @@ spmd_task(
     bool silence_warnings = true;   // more efficient to defer this to just
                                     // before calling driver, but this is
                                     // only a one-time setup
-    clog(error) << my_color << " returns value " << owner_to_subrect_future.get_result<double>(silence_warnings);
+    subrect_map owner_to_subrect_map =
+        owner_to_subrect_future.get_result<subrect_map>(silence_warnings);
 
     consecutive_index++;
   } // for idx_space

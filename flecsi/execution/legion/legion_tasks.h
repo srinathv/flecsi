@@ -26,6 +26,7 @@
 
 using legion_map = Legion::STL::map<LegionRuntime::Arrays::coord_t,
   LegionRuntime::Arrays::coord_t>;
+using subrect_map = Legion::STL::map<size_t, LegionRuntime::Arrays::Rect<2>>;
 
 clog_register_tag(legion_tasks);
 
@@ -415,8 +416,7 @@ __flecsi_internal_legion_task(ghost_copy_task, void) {
 //! @ingroup legion-execution
 //----------------------------------------------------------------------------//
 
-__flecsi_internal_legion_task(owners_subregions_task,
-    double) {
+__flecsi_internal_legion_task(owners_subregions_task, subrect_map) {
     const int my_color = runtime->find_local_MPI_rank();
     clog(error) << "rank " << my_color << " owners_subregions_task" << std::endl;
 
@@ -456,7 +456,7 @@ __flecsi_internal_legion_task(owners_subregions_task,
 
     clog(error) << "rank " << my_color << " : " << position_max << " ghost points " << std::endl;
 
-    Legion::STL::map<size_t, LegionRuntime::Arrays::Rect<2>> lid_to_subrect_map;
+    subrect_map lid_to_subrect_map;
 
     for(size_t ghost_pt = 0; ghost_pt < position_max; ghost_pt++) {
       LegionRuntime::Arrays::Point<2> ghost_ref = position_ref_data[ghost_pt];
@@ -489,8 +489,7 @@ __flecsi_internal_legion_task(owners_subregions_task,
 
     } // for ghost_pt
 
-    //return lid_to_subrect_map;
-    return 1.0;
+    return lid_to_subrect_map;
 } // owners_subregions
 
 //----------------------------------------------------------------------------//
