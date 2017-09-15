@@ -914,9 +914,6 @@ spmd_task(
         owner_itr!=owner_to_subrect_map.end(); owner_itr++) {
       size_t owner = owner_itr->first;
       LegionRuntime::Arrays::Rect<2> sub_rect = owner_itr->second;
-      clog(error) << my_color << " lid " << owner <<
-          " : " << sub_rect.lo[0] << " , " << sub_rect.lo[1] <<
-          " to " << sub_rect.hi[0] << " , " << sub_rect.hi[1] << std::endl;
 
       Legion::IndexSpace color_ispace =
           ghost_owners_lregions[idx_space][owner].get_index_space();
