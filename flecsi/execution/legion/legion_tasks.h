@@ -22,6 +22,7 @@
 #define GHOST_PART 1
 #define EXCLUSIVE_PART 0
 #define SHARED_PART 1
+#define SUBRECT_PART 0
 #define OWNER_COLOR_TAG 1
 
 using legion_map = Legion::STL::map<LegionRuntime::Arrays::coord_t,
@@ -418,7 +419,7 @@ __flecsi_internal_legion_task(ghost_copy_task, void) {
 
 __flecsi_internal_legion_task(owners_subregions_task, subrect_map) {
     const int my_color = runtime->find_local_MPI_rank();
-    clog(error) << "rank " << my_color << " owners_subregions_task" << std::endl;
+    //clog(error) << "rank " << my_color << " owners_subregions_task" << std::endl;
 
 
     clog_assert(regions.size() == 1, "owners_subregions_task requires 1 region");
@@ -428,12 +429,12 @@ __flecsi_internal_legion_task(owners_subregions_task, subrect_map) {
 
     legion_map owner_map = task->futures[0].get_result<legion_map>();
 
-    for(auto itr = owner_map.begin(); itr != owner_map.end(); itr++)
-        {
-        clog_tag_guard(legion_tasks);
-        clog(error) << "my_color= " << my_color << " gid " << itr->first <<
-          " maps to lid " << itr->second << std::endl;
-        }
+    //for(auto itr = owner_map.begin(); itr != owner_map.end(); itr++)
+    //    {
+    //    clog_tag_guard(legion_tasks);
+    //    clog(error) << "my_color= " << my_color << " gid " << itr->first <<
+    //      " maps to lid " << itr->second << std::endl;
+    //    }
 
     auto ghost_owner_pos_fid =
       LegionRuntime::HighLevel::FieldID(internal_field::ghost_owner_pos);
@@ -454,29 +455,29 @@ __flecsi_internal_legion_task(owners_subregions_task, subrect_map) {
         ghost_rect, ghost_sub_rect, byte_offset));
     size_t position_max = ghost_rect.hi[1] - ghost_rect.lo[1] + 1;
 
-    clog(error) << "rank " << my_color << " : " << position_max << " ghost points " << std::endl;
+    //clog(error) << "rank " << my_color << " : " << position_max << " ghost points " << std::endl;
 
     subrect_map lid_to_subrect_map;
 
     for(size_t ghost_pt = 0; ghost_pt < position_max; ghost_pt++) {
       LegionRuntime::Arrays::Point<2> ghost_ref = position_ref_data[ghost_pt];
 
-      {
-      clog_tag_guard(legion_tasks);
+      //{
+      //clog_tag_guard(legion_tasks);
       size_t lid = owner_map[ghost_ref.x[0]];
-      clog(error) << my_color << " copy from position " << ghost_ref.x[0] <<
-              "," << ghost_ref.x[1] <<
-              " which is actually lid " << lid << std::endl;
+      //clog(error) << my_color << " copy from position " << ghost_ref.x[0] <<
+      //        "," << ghost_ref.x[1] <<
+      //        " which is actually lid " << lid << std::endl;
 
       auto itr = lid_to_subrect_map.find(lid);
       if (itr == lid_to_subrect_map.end()) {
-        clog(error) << my_color << " lid " << lid << " not found in map " << std::endl;
+        //clog(error) << my_color << " lid " << lid << " not found in map " << std::endl;
         LegionRuntime::Arrays::Rect<2> new_rect(ghost_ref, ghost_ref);
         lid_to_subrect_map[lid] = new_rect;
       } else {
-        clog(error) << my_color << " fit " << ghost_ref.x[1] << " in " <<
-            lid_to_subrect_map[lid].lo[1] << " to " <<
-            lid_to_subrect_map[lid].hi[1] << std::endl;
+        //clog(error) << my_color << " fit " << ghost_ref.x[1] << " in " <<
+        //    lid_to_subrect_map[lid].lo[1] << " to " <<
+        //    lid_to_subrect_map[lid].hi[1] << std::endl;
         if (ghost_ref.x[1] < lid_to_subrect_map[lid].lo[1]) {
           LegionRuntime::Arrays::Rect<2> new_rect(ghost_ref, lid_to_subrect_map[lid].hi);
           lid_to_subrect_map[lid] = new_rect;
@@ -485,7 +486,7 @@ __flecsi_internal_legion_task(owners_subregions_task, subrect_map) {
           lid_to_subrect_map[lid] = new_rect;
         }
       } // if itr == end
-      } // scope
+      //} // scope
 
     } // for ghost_pt
 
