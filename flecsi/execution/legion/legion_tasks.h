@@ -133,16 +133,16 @@ __flecsi_internal_legion_task(owner_pos_correction_task, void) {
       LegionRuntime::Arrays::Point<2> old_location = ghost_ref_acc.read(
         ghost_ptr);
 
-      {
-      clog_tag_guard(legion_tasks);
-      clog(trace) << "points to " << old_location.x[0] << "," <<
-        old_location.x[1] << " local mirror is " <<
-        ghost_ptr.point_data[0] << "," << ghost_ptr.point_data[1] <<
-        " nbr " << owner_map[old_location.x[0]] <<
-        " range " << owners_rects[owner_map[old_location.x[0]]].lo[0] <<
-        ":" << owners_rects[owner_map[old_location.x[0]]].lo[1] <<
-        "," << owners_rects[owner_map[old_location.x[0]]].hi[1] << std::endl;
-      } // scope
+      //{
+      //clog_tag_guard(legion_tasks);
+      //clog(trace) << "points to " << old_location.x[0] << "," <<
+      //  old_location.x[1] << " local mirror is " <<
+      //  ghost_ptr.point_data[0] << "," << ghost_ptr.point_data[1] <<
+      //  " nbr " << owner_map[old_location.x[0]] <<
+      //  " range " << owners_rects[owner_map[old_location.x[0]]].lo[0] <<
+      //  ":" << owners_rects[owner_map[old_location.x[0]]].lo[1] <<
+      //  "," << owners_rects[owner_map[old_location.x[0]]].hi[1] << std::endl;
+      //} // scope
 
       clog_assert(old_location.x[0] == owners_rects[owner_map[
           old_location.x[0]]].lo[0],
@@ -161,12 +161,12 @@ __flecsi_internal_legion_task(owner_pos_correction_task, void) {
           Legion::DomainPoint::from_point<2>(old_location));
       ghost_ref_acc.write(ghost_ptr, new_location);
 
-      {
-      clog_tag_guard(legion_tasks);
-      clog(trace) << ghost_ptr.point_data[0] << "," << ghost_ptr.point_data[1]
-         << " points to " << new_location.x[0] <<
-          "," << new_location.x[1] << std::endl;
-      } // scope
+      //{
+      //clog_tag_guard(legion_tasks);
+      //clog(trace) << ghost_ptr.point_data[0] << "," << ghost_ptr.point_data[1]
+      //   << " points to " << new_location.x[0] <<
+      //    "," << new_location.x[1] << std::endl;
+      //} // scope
 
     } // for itr
   } // if we have owners
@@ -419,8 +419,6 @@ __flecsi_internal_legion_task(ghost_copy_task, void) {
 
 __flecsi_internal_legion_task(owners_subregions_task, subrect_map) {
     const int my_color = runtime->find_local_MPI_rank();
-    //clog(error) << "rank " << my_color << " owners_subregions_task" << std::endl;
-
 
     clog_assert(regions.size() == 1, "owners_subregions_task requires 1 region");
     clog_assert(task->regions.size() == 1, "owners_subregions_task requires 1 region");
@@ -450,8 +448,10 @@ __flecsi_internal_legion_task(owners_subregions_task, subrect_map) {
 
     subrect_map lid_to_subrect_map;
 
+    size_t fill_count = 0;
     for(size_t ghost_pt = 0; ghost_pt < position_max; ghost_pt++) {
       LegionRuntime::Arrays::Point<2> ghost_ref = position_ref_data[ghost_pt];
+      fill_count++;
 
       size_t lid = owner_map[ghost_ref.x[0]];
 
@@ -470,6 +470,16 @@ __flecsi_internal_legion_task(owners_subregions_task, subrect_map) {
       } // if itr == end
 
     } // for ghost_pt
+
+    // Output fill counts for Elliot
+    long long int total_size=0;
+    for(auto lid_itr=lid_to_subrect_map.begin();
+        lid_itr!=lid_to_subrect_map.end(); lid_itr++) {
+      LegionRuntime::Arrays::Rect<2> sub_rect = lid_itr->second;
+      total_size += sub_rect.hi[1] - sub_rect.lo[1] + 1;
+    }
+    std::cout << "rank " << my_color << ", " << fill_count << " of " <<
+        total_size << " share copies will be actually used." << std::endl;
 
     return lid_to_subrect_map;
 } // owners_subregions
