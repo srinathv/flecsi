@@ -255,8 +255,8 @@ __flecsi_internal_legion_task(owner_pos_compaction_task, void) {
         exclusive_itr != idx_space.second.exclusive.end();
         ++exclusive_itr)
     {
-      clog(trace) << my_color << " key " << idx_space.first <<
-        " exclusive " <<" " <<  *exclusive_itr << std::endl;
+      //clog(trace) << my_color << " key " << idx_space.first <<
+        //" exclusive " <<" " <<  *exclusive_itr << std::endl;
       expanded_itr++;
     } // exclusive_itr
 
@@ -272,9 +272,9 @@ __flecsi_internal_legion_task(owner_pos_compaction_task, void) {
       acc_ref.write(Legion::DomainPoint::from_point<2>(reference),
         expanded_itr.p);
 
-      clog(trace) << my_color << " key " << idx_space.first <<
-         " shared was " <<" " <<  *shared_itr << " now at " <<
-         expanded_itr.p << std::endl;
+      //clog(trace) << my_color << " key " << idx_space.first <<
+         //" shared was " <<" " <<  *shared_itr << " now at " <<
+         //expanded_itr.p << std::endl;
 
       expanded_itr++;
     } // shared_itr
