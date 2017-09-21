@@ -241,7 +241,8 @@ namespace execution {
         ghost_launcher.add_region_requirement(rr_ghost);
         // Execute the ghost copy task
         runtime->execute_task(context, ghost_launcher);
-
+        const int my_color = runtime->find_local_MPI_rank();
+        std::cout << "rank " << my_color << " ghost_launcher" << std::endl;
       } // for group
 
     } // launch copies

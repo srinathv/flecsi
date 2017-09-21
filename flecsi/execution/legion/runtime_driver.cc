@@ -669,6 +669,9 @@ spmd_task(
   args_deserializer.deserialize((void*)num_owners, sizeof(size_t)
       * num_idx_spaces);
 
+  for(size_t indx=0; indx<num_idx_spaces; indx++)
+    std::cout << "rank " << my_color << " indx " << indx << " has " << num_owners[indx] << " nbrs" << std::endl;
+
   // fille index_space_data_map with pbarriers_as_owner
   size_t indx = 0;
   for(auto is: context_.coloring_map()) {

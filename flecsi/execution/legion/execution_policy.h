@@ -292,9 +292,13 @@ struct legion_execution_policy_t
          task_launcher.tag=MAPPER_COMPACTED_STORAGE;
 #endif
 
+         size_t nreqs = 0;
           for(auto& req : init_args.region_reqs){
             task_launcher.add_region_requirement(req);
+            nreqs++;
           }
+          const int my_color = legion_runtime->find_local_MPI_rank();
+          std::cout << "rank " << my_color << " execute " << KEY << " w/ " << nreqs << " reqs" << std::endl;
 
           // Enqueue the prolog.
           task_prolog_t
