@@ -22,6 +22,7 @@
 
 #include <legion.h>
 #include <vector>
+#include <mpi.h>
 
 #include "flecsi/data/data.h"
 #include "flecsi/execution/context.h"
@@ -172,7 +173,10 @@ namespace execution {
 
     void launch_copies()
     {
-      auto& flecsi_context = context_t::instance();
+      int rank;
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+     auto& flecsi_context = context_t::instance();
+      double t_start = MPI_Wtime();
 
       // group owners by owner_regions
       std::vector<std::set<size_t>> owner_groups;
@@ -192,9 +196,14 @@ namespace execution {
           owner_groups.push_back(new_group);
         }
       } // for owner
+      double t_group = MPI_Wtime();
+      std::cout << "rank " << rank << " t_group " << t_group-t_start << std::endl;
 
+      double t_setup = 0.0;
+      double t_plaunch = 0.0;
       // launch copy task per group of owners with same owner_region
       for(size_t group{0}; group<owner_groups.size(); group++) {
+        t_setup -= t_group;
         auto first_itr = owner_groups[group].begin();
         size_t first = *first_itr;
 
@@ -239,10 +248,17 @@ namespace execution {
         } // for owner
         ghost_launcher.add_region_requirement(rr_shared);
         ghost_launcher.add_region_requirement(rr_ghost);
+        t_group = MPI_Wtime();
+        t_setup += t_group;
+        t_plaunch -= t_group;
         // Execute the ghost copy task
         runtime->execute_task(context, ghost_launcher);
+        t_group = MPI_Wtime();
+        t_plaunch += t_group;
 
       } // for group
+      std::cout << "rank " << rank << " t_setup " << t_setup << std::endl;
+      std::cout << "rank " << rank << " t_plaunch " << t_plaunch << std::endl;
 
     } // launch copies
 

@@ -316,9 +316,11 @@ struct legion_execution_policy_t
           task_prolog_t
             task_prolog(legion_runtime, legion_context, task_launcher);
           task_prolog.walk(task_args);
+          double t_pwalk = MPI_Wtime();
+          std::cout << "rank " << rank << " t_pwalk " << t_pwalk - t_req << std::endl;
           task_prolog.launch_copies();
           double t_prolog = MPI_Wtime();
-          std::cout << "rank " << rank << " t_prolog " << t_prolog - t_req << std::endl;
+          std::cout << "rank " << rank << " t_prolog " << t_prolog - t_pwalk << std::endl;
 
           // Enqueue the task.
           //clog(trace) << "Execute flecsi/legion task " << KEY << " on rank " <<
