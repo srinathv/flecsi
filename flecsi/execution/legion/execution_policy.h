@@ -26,6 +26,7 @@
 
 #include <cinchlog.h>
 #include <legion.h>
+#include <mpi.h>
 
 #include "flecsi/execution/common/processor.h"
 #include "flecsi/execution/context.h"
@@ -221,10 +222,16 @@ struct legion_execution_policy_t
     ARGS && ... args
   )
   {
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    double t_start = MPI_Wtime();
+
     using namespace Legion;
 
     // Make a tuple from the task arguments.
     ARG_TUPLE task_args = std::make_tuple(args ...);
+    double t_tuple = MPI_Wtime();
+    std::cout << "rank " << rank << " t_tuple " << t_tuple-t_start << std::endl;
 
     context_t & context_ = context_t::instance();
 
@@ -239,6 +246,8 @@ struct legion_execution_policy_t
     auto legion_runtime = context_.runtime(parent);
     auto legion_context = context_.context(parent);
 #endif
+    double t_context = MPI_Wtime();
+    std::cout << "rank " << rank << " t_tuple " << t_context - t_tuple << std::endl;
 
     // Handle MPI and Legion invocations separately.
     if(processor_type == processor_type_t::mpi) {
@@ -276,6 +285,9 @@ struct legion_execution_policy_t
       init_args_t init_args(legion_runtime, legion_context);
       init_args.walk(task_args);
 
+      double t_walk = MPI_Wtime();
+      std::cout << "rank " << rank << " t_walk " << t_walk - t_context << std::endl;
+
       // Switch on launch type: single or index.
       switch(launch) {
 
@@ -291,27 +303,38 @@ struct legion_execution_policy_t
 #ifdef MAPPER_COMPACTION
          task_launcher.tag=MAPPER_COMPACTED_STORAGE;
 #endif
+         double t_construct = MPI_Wtime();
+         std::cout << "rank " << rank << " t_construct " << t_construct - t_walk << std::endl;
 
           for(auto& req : init_args.region_reqs){
             task_launcher.add_region_requirement(req);
           }
+          double t_req = MPI_Wtime();
+          std::cout << "rank " << rank << " t_req " << t_req - t_construct << std::endl;
 
           // Enqueue the prolog.
           task_prolog_t
             task_prolog(legion_runtime, legion_context, task_launcher);
           task_prolog.walk(task_args);
           task_prolog.launch_copies();
+          double t_prolog = MPI_Wtime();
+          std::cout << "rank " << rank << " t_prolog " << t_prolog - t_req << std::endl;
 
           // Enqueue the task.
           //clog(trace) << "Execute flecsi/legion task " << KEY << " on rank " <<
           //    legion_runtime->find_local_MPI_rank() << std::endl;
           auto future = legion_runtime->execute_task(legion_context,
             task_launcher);
+          double t_launch = MPI_Wtime();
+          std::cout << "rank " << rank << " t_launch " << t_launch - t_prolog << std::endl;
 
           // Enqueue the epilog.
           task_epilog_t
             task_epilog(legion_runtime, legion_context);
           task_epilog.walk(task_args);
+          double t_epi = MPI_Wtime();
+          std::cout << "rank " << rank << " t_epi " << t_epi - t_launch << std::endl;
+          std::cout << "rank " << rank << " t_total " << t_epi - t_start << std::endl;
 
           return legion_future__<RETURN>(future);
           } // scope
@@ -352,6 +375,7 @@ struct legion_execution_policy_t
 
       } // switch
     } // if
+
   } // execute_task
 
   //--------------------------------------------------------------------------//
